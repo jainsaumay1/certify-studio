@@ -1,3 +1,5 @@
+import { supabase } from "./supabase";
+
 export type CredentialStatus = "valid" | "corrected" | "reissued" | "revoked";
 
 export interface Credential {
@@ -18,7 +20,8 @@ export interface Credential {
 
 const STORAGE_KEY = "certify_studio_credentials";
 
-function loadAll(): Credential[] {
+// --- Local Storage Fallback Methods ---
+function loadAllLocal(): Credential[] {
   if (typeof window === "undefined") return [];
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -28,67 +31,102 @@ function loadAll(): Credential[] {
   }
 }
 
-function saveAll(records: Credential[]): void {
+function saveAllLocal(records: Credential[]): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
 }
 
+// --- Async Store API ---
 export const credentialStore = {
-  getAll(): Credential[] {
-    return loadAll();
+  async getAll(): Promise<Credential[]> {
+    if (supabase) {
+      const { data, error } = await supabase.from("credentials").select("*");
+      if (!error && data) return data as Credential[];
+    }
+    return loadAllLocal();
   },
 
-  getById(id: string): Credential | undefined {
-    return loadAll().find((c) => c.id === id);
+  async getById(id: string): Promise<Credential | undefined> {
+    if (supabase) {
+      const { data } = await supabase.from("credentials").select("*").eq("id", id).single();
+      if (data) return data as Credential;
+    }
+    return loadAllLocal().find((c) => c.id === id);
   },
 
-  getByCode(code: string): Credential | undefined {
-    return loadAll().find((c) => c.certificate_code === code);
+  async getByCode(code: string): Promise<Credential | undefined> {
+    if (supabase) {
+      const { data } = await supabase.from("credentials").select("*").eq("certificate_code", code).single();
+      if (data) return data as Credential;
+    }
+    return loadAllLocal().find((c) => c.certificate_code === code);
   },
 
-  insertMany(records: Credential[]): void {
-    const existing = loadAll();
-    const merged = [...existing, ...records];
-    saveAll(merged);
+  async insertMany(records: Credential[]): Promise<void> {
+    if (supabase) {
+      const { error } = await supabase.from("credentials").insert(records);
+      if (error) console.error("Supabase insert error", error);
+      // Even if supabase is active, we might want to also save locally for redundancy, 
+      // but let's stick to either/or for simplicity unless it fails.
+      if (!error) return;
+    }
+    const existing = loadAllLocal();
+    saveAllLocal([...existing, ...records]);
   },
 
-  update(code: string, patch: Partial<Credential>): Credential | undefined {
-    const all = loadAll();
+  async update(code: string, patch: Partial<Credential>): Promise<Credential | undefined> {
+    if (supabase) {
+      const { data, error } = await supabase
+        .from("credentials")
+        .update(patch)
+        .eq("certificate_code", code)
+        .select()
+        .single();
+      if (!error && data) return data as Credential;
+    }
+    const all = loadAllLocal();
     const idx = all.findIndex((c) => c.certificate_code === code);
     if (idx === -1) return undefined;
     all[idx] = { ...all[idx], ...patch };
-    saveAll(all);
+    saveAllLocal(all);
     return all[idx];
   },
 
-  revoke(code: string, reason: string): Credential | undefined {
-    return credentialStore.update(code, {
+  async revoke(code: string, reason: string): Promise<Credential | undefined> {
+    return this.update(code, {
       status: "revoked",
       revocation_reason: reason,
       revocation_timestamp: new Date().toISOString(),
     });
   },
 
-  reissue(
+  async reissue(
     oldCode: string,
     newRecord: Credential
-  ): { old: Credential | undefined; new: Credential } {
-    credentialStore.update(oldCode, {
+  ): Promise<{ old: Credential | undefined; new: Credential }> {
+    await this.update(oldCode, {
       status: "reissued",
       superseded_by: newRecord.certificate_code,
     });
-    const all = loadAll();
-    all.push(newRecord);
-    saveAll(all);
+    
+    if (supabase) {
+       await supabase.from("credentials").insert(newRecord);
+    } else {
+       const all = loadAllLocal();
+       all.push(newRecord);
+       saveAllLocal(all);
+    }
+    
     return {
-      old: credentialStore.getByCode(oldCode),
+      old: await this.getByCode(oldCode),
       new: newRecord,
     };
   },
 
-  clear(): void {
+  async clear(): Promise<void> {
     if (typeof window !== "undefined") {
       localStorage.removeItem(STORAGE_KEY);
     }
+    // Cannot easily truncate a table in supabase via client without RPC, skip for safety
   },
 };
