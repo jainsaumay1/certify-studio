@@ -13,7 +13,10 @@ import {
   Type, 
   Calendar, 
   GraduationCap, 
-  Image as ImageIcon 
+  Image as ImageIcon,
+  CheckCircle2,
+  Layers,
+  Palette
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
@@ -29,11 +32,19 @@ const COLOR_SWATCHES = [
   { name: "Dark Navy", val: "#0f172a" },
 ];
 
+const TEXT_COLOR_SWATCHES = [
+  { name: "Canva Navy", color: "#133e7c" },
+  { name: "Midnight", color: "#0f2847" },
+  { name: "Royal Blue", color: "#1e3a8a" },
+  { name: "Black", color: "#111827" },
+  { name: "Amber Gold", color: "#b45309" },
+];
+
 export default function Step4_Preview() {
   const { mappedRows, templateConfig, setTemplateConfig, setStep } = useStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showTuner, setShowTuner] = useState(false);
-  const [activeTunerTab, setActiveTunerTab] = useState<"name" | "title" | "course" | "date" | "logo">("name");
+  const [activeTunerTab, setActiveTunerTab] = useState<"all" | "name" | "title" | "course" | "date" | "logo">("all");
 
   // Dragging state for direct canvas interactive manipulation
   const [dragTarget, setDragTarget] = useState<DraggableTarget | null>(null);
@@ -99,6 +110,61 @@ export default function Step4_Preview() {
 
   const updateConfig = (patch: Partial<typeof templateConfig>) => {
     setTemplateConfig({ ...templateConfig, ...patch });
+  };
+
+  // GLOBAL ACTIONS ("Make Changes for All")
+  const applyBoxColorToAll = (color: string) => {
+    updateConfig({
+      whiteoutColor: color,
+      oldLogoCoverColor: color,
+      titleBoxColor: color,
+      subtitleBoxColor: color,
+      courseBoxColor: color,
+      dateBoxColor: color,
+    });
+  };
+
+  const toggleAllBoxes = (enable: boolean) => {
+    updateConfig({
+      coverOldText: enable,
+      coverOldLogo: enable,
+      titleCoverBox: enable,
+      subtitleCoverBox: enable,
+      courseCoverBox: enable,
+      dateCoverBox: enable,
+    });
+  };
+
+  const shiftAllX = (delta: number) => {
+    updateConfig({
+      nameX: (templateConfig.nameX ?? (isCustomBg ? 125 : 0)) + delta,
+      logoX: (templateConfig.logoX ?? (isCustomBg ? 125 : 0)) + delta,
+      titleX: (templateConfig.titleX ?? 0) + delta,
+      subtitleX: (templateConfig.subtitleX ?? (templateConfig.titleX ?? 0)) + delta,
+      courseX: (templateConfig.courseX ?? (templateConfig.nameX ?? (isCustomBg ? 125 : 0))) + delta,
+      dateX: (templateConfig.dateX ?? (isCustomBg ? 125 : 0)) + delta,
+    });
+  };
+
+  const setAllX = (targetX: number) => {
+    updateConfig({
+      nameX: targetX,
+      logoX: targetX,
+      titleX: targetX,
+      subtitleX: targetX,
+      courseX: targetX,
+      dateX: targetX,
+    });
+  };
+
+  const applyTextColorToAll = (color: string) => {
+    updateConfig({
+      nameColor: color,
+      titleColor: color,
+      subtitleColor: color,
+      courseColor: color,
+      dateColor: color,
+    });
   };
 
   // Drag handlers for all fields
@@ -342,7 +408,7 @@ export default function Step4_Preview() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Step 4 — Live Preview</h2>
           <p className="mt-1 text-gray-500">
-            Review your dynamic certificates. Grab and drag ANY field (Name, Logo, Title, Date, Course) directly on the canvas!
+            Review your dynamic certificates. Grab and drag ANY field directly on the canvas, or use &quot;All Fields&quot; to apply changes globally!
           </p>
         </div>
         <div className="flex gap-2">
@@ -365,6 +431,15 @@ export default function Step4_Preview() {
             Highlight Outlier
           </Button>
         </div>
+      </div>
+
+      {/* Reassurance Banner: Changes apply to ALL certificates */}
+      <div className="p-2.5 bg-emerald-50 border border-emerald-200 rounded-lg flex items-center justify-between text-xs text-emerald-800">
+        <span className="flex items-center gap-1.5 font-medium">
+          <CheckCircle2 size={15} className="text-emerald-600" />
+          Global Batch Scope: Any changes made here are automatically applied to all {mappedRows.length} certificates.
+        </span>
+        <span className="text-[11px] text-emerald-700">Previewing record {currentIndex + 1} of {mappedRows.length}</span>
       </div>
 
       {/* Smart Quick Presets for Custom Designs */}
@@ -410,12 +485,22 @@ export default function Step4_Preview() {
                 Arrange Fields & Underneath Boxes
               </span>
               <span className="text-[11px] text-blue-700 hidden sm:inline">
-                (Choose size and color for the underneath box of any field)
+                (Switch tabs to adjust individually, or use &quot;All Fields&quot; to change everything together)
               </span>
             </div>
 
             {/* Field Tabs */}
             <div className="flex flex-wrap gap-1 bg-white p-1 rounded-lg border border-blue-200">
+              <button
+                type="button"
+                onClick={() => setActiveTunerTab("all")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold transition-colors ${
+                  activeTunerTab === "all" ? "bg-indigo-600 text-white shadow-2xs" : "text-indigo-700 bg-indigo-50/70 hover:bg-indigo-100"
+                }`}
+              >
+                <Layers size={13} />
+                All Fields (Global)
+              </button>
               <button
                 type="button"
                 onClick={() => setActiveTunerTab("name")}
@@ -468,6 +553,159 @@ export default function Step4_Preview() {
               </button>
             </div>
           </div>
+
+          {/* TAB 0: ALL FIELDS (GLOBAL CONTROLS) */}
+          {activeTunerTab === "all" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* 1. Global Underneath Box Color */}
+              <div className="bg-white p-3 rounded-lg border border-indigo-100 space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between font-semibold text-indigo-950">
+                  <span className="flex items-center gap-1.5">
+                    <Palette size={14} className="text-indigo-600" />
+                    Apply Box Color to ALL Fields
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-500">
+                  Sets the underneath background color for Name, Logo, Title, Subtitle, Course, and Date at once:
+                </p>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={templateConfig.whiteoutColor || "#ffffff"}
+                    onChange={(e) => applyBoxColorToAll(e.target.value)}
+                    className="w-8 h-8 border border-gray-300 rounded cursor-pointer shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={templateConfig.whiteoutColor || "#ffffff"}
+                    onChange={(e) => applyBoxColorToAll(e.target.value)}
+                    placeholder="#ffffff"
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {COLOR_SWATCHES.map((swatch) => (
+                    <button
+                      key={swatch.val}
+                      type="button"
+                      onClick={() => applyBoxColorToAll(swatch.val)}
+                      className="px-2 py-1 rounded border text-[11px] hover:border-indigo-400 flex items-center gap-1 bg-gray-50"
+                      style={{
+                        borderColor: (templateConfig.whiteoutColor || "#ffffff").toLowerCase() === swatch.val ? "#4f46e5" : "#e5e7eb",
+                        fontWeight: (templateConfig.whiteoutColor || "#ffffff").toLowerCase() === swatch.val ? "bold" : "normal"
+                      }}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full border border-gray-300" style={{ backgroundColor: swatch.val }} />
+                      {swatch.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 2. Global Boxes On / Off */}
+              <div className="bg-white p-3 rounded-lg border border-indigo-100 space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between font-semibold text-indigo-950">
+                  <span className="flex items-center gap-1.5">
+                    <Eraser size={14} className="text-indigo-600" />
+                    Turn Boxes ON / OFF for ALL
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-500">
+                  Enable or disable background eraser boxes across all fields simultaneously:
+                </p>
+                <div className="flex flex-col gap-1.5 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => toggleAllBoxes(true)}
+                    className="w-full py-1.5 px-3 bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 rounded text-xs font-medium flex items-center justify-center gap-1.5"
+                  >
+                    <Eraser size={13} />
+                    Turn ON All Underneath Boxes
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => toggleAllBoxes(false)}
+                    className="w-full py-1.5 px-3 bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 rounded text-xs font-medium flex items-center justify-center gap-1.5"
+                  >
+                    Turn OFF All Underneath Boxes
+                  </button>
+                </div>
+              </div>
+
+              {/* 3. Global Horizontal Shift (Align All Together) */}
+              <div className="bg-white p-3 rounded-lg border border-indigo-100 space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between font-semibold text-indigo-950">
+                  <span className="flex items-center gap-1.5">
+                    <MoveHorizontal size={14} className="text-indigo-600" />
+                    Shift ALL Fields Together (X)
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-500">
+                  Moves Name, Title, Subtitle, Course, Date, and Logo in unison:
+                </p>
+                <div className="flex justify-between gap-1 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => shiftAllX(-20)}
+                    className="flex-1 py-1 px-1.5 bg-gray-100 hover:bg-gray-200 rounded text-[11px] font-medium"
+                  >
+                    ← Left (-20)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAllX(0)}
+                    className="py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded text-[11px] font-medium"
+                  >
+                    Center (0)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => shiftAllX(20)}
+                    className="flex-1 py-1 px-1.5 bg-gray-100 hover:bg-gray-200 rounded text-[11px] font-medium"
+                  >
+                    Right (+20) →
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setAllX(125)}
+                  className="w-full py-1 px-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded text-[11px] font-medium"
+                >
+                  Snap All to Right Column (+125px)
+                </button>
+              </div>
+
+              {/* 4. Global Text Color */}
+              <div className="bg-white p-3 rounded-lg border border-indigo-100 space-y-2 shadow-2xs">
+                <div className="flex items-center justify-between font-semibold text-indigo-950">
+                  <span className="flex items-center gap-1.5">
+                    <Type size={14} className="text-indigo-600" />
+                    Apply Text Color to ALL Fields
+                  </span>
+                </div>
+                <p className="text-[10px] text-gray-500">
+                  Sets the typography color across Name, Title, Subtitle, Course, and Date:
+                </p>
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {TEXT_COLOR_SWATCHES.map((item) => (
+                    <button
+                      key={item.color}
+                      type="button"
+                      onClick={() => applyTextColorToAll(item.color)}
+                      className="flex items-center gap-1 px-2 py-1 rounded border text-[10px] hover:border-indigo-400 bg-gray-50"
+                      style={{
+                        borderColor: templateConfig.nameColor === item.color ? item.color : "#e5e7eb",
+                        fontWeight: templateConfig.nameColor === item.color ? "bold" : "normal"
+                      }}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: item.color }} />
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* TAB 1: RECIPIENT NAME & UNDERNEATH BOX */}
           {activeTunerTab === "name" && (
@@ -542,12 +780,7 @@ export default function Step4_Preview() {
                   />
                 </div>
                 <div className="flex flex-wrap gap-1 pt-1">
-                  {[
-                    { name: "Canva Navy", color: "#133e7c" },
-                    { name: "Midnight", color: "#0f2847" },
-                    { name: "Royal Blue", color: "#1e3a8a" },
-                    { name: "Black", color: "#111827" },
-                  ].map((item) => (
+                  {TEXT_COLOR_SWATCHES.map((item) => (
                     <button
                       key={item.color}
                       type="button"
