@@ -209,7 +209,9 @@ export async function renderCertificate(
       if (templateConfig.coverOldLogo ?? isCustomBg) {
         const coverW = templateConfig.oldLogoCoverWidth || (targetWidth + 20);
         const coverH = templateConfig.oldLogoCoverHeight || (targetHeight + 20);
-        const logoBoxCol = templateConfig.whiteoutColor ? hexToRgb(templateConfig.whiteoutColor) : { r: 1, g: 1, b: 1 };
+        const logoBoxCol = templateConfig.oldLogoCoverColor
+          ? hexToRgb(templateConfig.oldLogoCoverColor)
+          : (templateConfig.whiteoutColor ? hexToRgb(templateConfig.whiteoutColor) : { r: 1, g: 1, b: 1 });
         page.drawRectangle({
           x: logoCenterX - coverW / 2,
           y: logoCenterY - coverH / 2,
@@ -266,6 +268,21 @@ export async function renderCertificate(
       const titleWidth = boldFont.widthOfTextAtSize(titleText, titleSize);
       const titleCenterX = (width / 2) + titleOffsetX;
       const titleCenterY = (height / 2) - (templateConfig.titleY ?? -140);
+
+      // Title Box Underneath (Eraser / Cover Box)
+      if (templateConfig.titleCoverBox) {
+        const tBoxW = templateConfig.titleBoxWidth || (titleWidth + 40);
+        const tBoxH = templateConfig.titleBoxHeight || (titleSize + 20);
+        const tBoxCol = templateConfig.titleBoxColor ? hexToRgb(templateConfig.titleBoxColor) : { r: 1, g: 1, b: 1 };
+        page.drawRectangle({
+          x: titleCenterX - tBoxW / 2,
+          y: titleCenterY - tBoxH / 2,
+          width: tBoxW,
+          height: tBoxH,
+          color: rgb(tBoxCol.r, tBoxCol.g, tBoxCol.b),
+        });
+      }
+
       page.drawText(titleText, {
         x: titleCenterX - (titleWidth / 2),
         y: titleCenterY - (titleSize * 0.35),
@@ -282,6 +299,21 @@ export async function renderCertificate(
         const subCustomCol = templateConfig.subtitleColor ? hexToRgb(templateConfig.subtitleColor) : null;
         const subCenterX = (width / 2) + (templateConfig.subtitleX ?? titleOffsetX);
         const subCenterY = (height / 2) - (templateConfig.subtitleY ?? ((templateConfig.titleY ?? -140) + 32));
+
+        // Subtitle Box Underneath (Eraser / Cover Box)
+        if (templateConfig.subtitleCoverBox) {
+          const sBoxW = templateConfig.subtitleBoxWidth || (subWidth + 30);
+          const sBoxH = templateConfig.subtitleBoxHeight || (subSize + 16);
+          const sBoxCol = templateConfig.subtitleBoxColor ? hexToRgb(templateConfig.subtitleBoxColor) : { r: 1, g: 1, b: 1 };
+          page.drawRectangle({
+            x: subCenterX - sBoxW / 2,
+            y: subCenterY - sBoxH / 2,
+            width: sBoxW,
+            height: sBoxH,
+            color: rgb(sBoxCol.r, sBoxCol.g, sBoxCol.b),
+          });
+        }
+
         page.drawText(subText, {
           x: subCenterX - (subWidth / 2),
           y: subCenterY - (subSize * 0.35),
@@ -483,6 +515,20 @@ export async function renderCertificate(
       ? (height / 2) - (templateConfig.courseY ?? ((templateConfig.nameY ?? 52) + 45))
       : (finalNameY - 36 - courseSize - (templateConfig.courseY || 0));
 
+    // Course Box Underneath (Eraser / Cover Box)
+    if (templateConfig.courseCoverBox) {
+      const cBoxW = templateConfig.courseBoxWidth || (courseWidth + 40);
+      const cBoxH = templateConfig.courseBoxHeight || (courseSize + 18);
+      const cBoxCol = templateConfig.courseBoxColor ? hexToRgb(templateConfig.courseBoxColor) : { r: 1, g: 1, b: 1 };
+      page.drawRectangle({
+        x: courseCenterX - cBoxW / 2,
+        y: finalCourseY - (cBoxH - courseSize) / 2,
+        width: cBoxW,
+        height: cBoxH,
+        color: rgb(cBoxCol.r, cBoxCol.g, cBoxCol.b),
+      });
+    }
+
     page.drawText(courseName, {
       x: finalCourseX,
       y: finalCourseY,
@@ -501,12 +547,26 @@ export async function renderCertificate(
     const datePrefix = templateConfig.datePrefix || "Issued:";
     const dateText = `${datePrefix} ${issueDate}`;
     const dateWidth = regularFont.widthOfTextAtSize(dateText, dateSize);
-    const dateCenterX = (width / 2) + (templateConfig.dateX ?? 0);
+    const dateCenterX = (width / 2) + (templateConfig.dateX ?? (isCustomBg ? 125 : 0));
     const finalDateX = Math.max(margin, dateCenterX - (dateWidth / 2));
     const finalDateY = isCustomBg
       ? (height / 2) - (templateConfig.dateY ?? 180)
       : (finalNameY - 80 - (templateConfig.dateY || 0));
     const staticColor = templateConfig.isDarkModeTemplate ? rgb(0.9, 0.9, 0.9) : rgb(0.4, 0.4, 0.4);
+
+    // Date Box Underneath (Eraser / Cover Box)
+    if (templateConfig.dateCoverBox) {
+      const dBoxW = templateConfig.dateBoxWidth || (dateWidth + 30);
+      const dBoxH = templateConfig.dateBoxHeight || (dateSize + 16);
+      const dBoxCol = templateConfig.dateBoxColor ? hexToRgb(templateConfig.dateBoxColor) : { r: 1, g: 1, b: 1 };
+      page.drawRectangle({
+        x: dateCenterX - dBoxW / 2,
+        y: finalDateY - (dBoxH - dateSize) / 2,
+        width: dBoxW,
+        height: dBoxH,
+        color: rgb(dBoxCol.r, dBoxCol.g, dBoxCol.b),
+      });
+    }
 
     page.drawText(dateText, {
       x: finalDateX,

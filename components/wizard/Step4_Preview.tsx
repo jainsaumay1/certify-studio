@@ -21,6 +21,14 @@ import { useStore } from "@/lib/store";
 
 type DraggableTarget = "name" | "logo" | "title" | "subtitle" | "course" | "date";
 
+const COLOR_SWATCHES = [
+  { name: "White", val: "#ffffff" },
+  { name: "Cream", val: "#fef9ee" },
+  { name: "Off-White", val: "#fdfbf7" },
+  { name: "Light Slate", val: "#f1f5f9" },
+  { name: "Dark Navy", val: "#0f172a" },
+];
+
 export default function Step4_Preview() {
   const { mappedRows, templateConfig, setTemplateConfig, setStep } = useStore();
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -99,7 +107,7 @@ export default function Step4_Preview() {
     e.stopPropagation();
     setDragTarget(target);
     setActiveTunerTab(
-      target === "title" || target === "subtitle" ? "title" : target as "name" | "course" | "date" | "logo"
+      target === "title" || target === "subtitle" ? "title" : (target as "name" | "course" | "date" | "logo")
     );
 
     let startX = 0;
@@ -183,6 +191,7 @@ export default function Step4_Preview() {
       coverOldLogo: true,
       oldLogoCoverWidth: 95,
       oldLogoCoverHeight: 95,
+      oldLogoCoverColor: "#ffffff",
       nameColor: "#133e7c",
       nameFontFamily: "Helvetica-Bold",
       nameFontSize: 36,
@@ -211,6 +220,7 @@ export default function Step4_Preview() {
       coverOldLogo: true,
       oldLogoCoverWidth: 95,
       oldLogoCoverHeight: 95,
+      oldLogoCoverColor: "#ffffff",
       nameColor: "#133e7c",
       nameFontFamily: "Helvetica-Bold",
       nameFontSize: 36,
@@ -222,6 +232,109 @@ export default function Step4_Preview() {
       isCleanMode: true,
     });
   };
+
+  // Reusable Underneath Box Tuner Component
+  const renderBoxControls = (
+    label: string,
+    enabled: boolean,
+    onToggle: (v: boolean) => void,
+    width: number,
+    onWidthChange: (w: number) => void,
+    minW = 100,
+    maxW = 750,
+    height: number,
+    onHeightChange: (h: number) => void,
+    minH = 20,
+    maxH = 150,
+    color: string,
+    onColorChange: (c: string) => void
+  ) => (
+    <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+      <div className="flex items-center justify-between font-medium">
+        <span className="flex items-center gap-1">
+          <Eraser size={13} className="text-blue-600" />
+          {label}
+        </span>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            className="sr-only peer"
+            checked={enabled}
+            onChange={(e) => onToggle(e.target.checked)}
+          />
+          <div className="w-7 h-4 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
+        </label>
+      </div>
+
+      {enabled && (
+        <div className="space-y-2 pt-1">
+          <div>
+            <div className="flex justify-between text-[11px] mb-0.5">
+              <span>Box Width</span>
+              <span className="font-mono text-blue-700">{width}px</span>
+            </div>
+            <input
+              type="range"
+              min={minW}
+              max={maxW}
+              step={5}
+              value={width}
+              onChange={(e) => onWidthChange(Number(e.target.value))}
+              className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+            />
+          </div>
+
+          <div>
+            <div className="flex justify-between text-[11px] mb-0.5">
+              <span>Box Height</span>
+              <span className="font-mono text-blue-700">{height}px</span>
+            </div>
+            <input
+              type="range"
+              min={minH}
+              max={maxH}
+              step={2}
+              value={height}
+              onChange={(e) => onHeightChange(Number(e.target.value))}
+              className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+            />
+          </div>
+
+          <div>
+            <label className="text-[11px] text-gray-600 block mb-1">Box Color</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="color"
+                value={color || "#ffffff"}
+                onChange={(e) => onColorChange(e.target.value)}
+                className="w-7 h-7 border border-gray-300 rounded cursor-pointer shrink-0"
+              />
+              <input
+                type="text"
+                value={color || "#ffffff"}
+                onChange={(e) => onColorChange(e.target.value)}
+                placeholder="#ffffff"
+                className="flex-1 px-2 py-0.5 border border-gray-300 rounded text-xs font-mono"
+              />
+            </div>
+            {/* Quick swatches */}
+            <div className="flex items-center gap-1.5 mt-1.5">
+              {COLOR_SWATCHES.map((swatch) => (
+                <button
+                  key={swatch.val}
+                  type="button"
+                  onClick={() => onColorChange(swatch.val)}
+                  title={swatch.name}
+                  className="w-4 h-4 rounded-full border border-gray-300 hover:scale-125 transition-transform"
+                  style={{ backgroundColor: swatch.val }}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 
   return (
     <div className="space-y-6">
@@ -240,7 +353,7 @@ export default function Step4_Preview() {
             className="gap-1.5 shrink-0 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
           >
             <Sliders size={14} />
-            {showTuner ? "Hide Alignment Tuner" : "Arrange Fields & Colors"}
+            {showTuner ? "Hide Alignment Tuner" : "Arrange Fields & Underneath Boxes"}
           </Button>
           <Button
             variant="outline"
@@ -294,10 +407,10 @@ export default function Step4_Preview() {
             <div className="flex items-center gap-2">
               <span className="font-semibold text-blue-950 flex items-center gap-1.5 text-sm">
                 <Sliders size={16} className="text-blue-600" />
-                Arrange Fields & Styling
+                Arrange Fields & Underneath Boxes
               </span>
               <span className="text-[11px] text-blue-700 hidden sm:inline">
-                (Click any tab or drag elements directly on the certificate)
+                (Choose size and color for the underneath box of any field)
               </span>
             </div>
 
@@ -311,7 +424,7 @@ export default function Step4_Preview() {
                 }`}
               >
                 <Type size={13} />
-                Name & Underneath Box
+                Name Box
               </button>
               <button
                 type="button"
@@ -321,7 +434,7 @@ export default function Step4_Preview() {
                 }`}
               >
                 <ImageIcon size={13} />
-                Logo
+                Logo Box
               </button>
               <button
                 type="button"
@@ -331,7 +444,7 @@ export default function Step4_Preview() {
                 }`}
               >
                 <Sparkles size={13} />
-                Title & Subtitle
+                Title & Subtitle Box
               </button>
               <button
                 type="button"
@@ -341,7 +454,7 @@ export default function Step4_Preview() {
                 }`}
               >
                 <GraduationCap size={13} />
-                Course
+                Course Box
               </button>
               <button
                 type="button"
@@ -351,14 +464,14 @@ export default function Step4_Preview() {
                 }`}
               >
                 <Calendar size={13} />
-                Date
+                Date Box
               </button>
             </div>
           </div>
 
           {/* TAB 1: RECIPIENT NAME & UNDERNEATH BOX */}
           {activeTunerTab === "name" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* Name Position Shift */}
               <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
                 <div className="flex items-center justify-between font-medium">
@@ -396,95 +509,20 @@ export default function Step4_Preview() {
                 />
               </div>
 
-              {/* Box Underneath Color & Eraser Toggle */}
-              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
-                <div className="flex items-center justify-between font-medium">
-                  <span className="flex items-center gap-1">
-                    <Eraser size={13} className="text-blue-600" />
-                    Box Underneath Name
-                  </span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={templateConfig.coverOldText ?? isCustomBg}
-                      onChange={(e) => updateConfig({ coverOldText: e.target.checked })}
-                    />
-                    <div className="w-7 h-4 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
-                  </label>
-                </div>
-
-                <div>
-                  <label className="text-[11px] font-medium text-gray-700 block mb-1">
-                    Box Underneath Color (Eraser)
-                  </label>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="color"
-                      value={templateConfig.whiteoutColor || "#ffffff"}
-                      onChange={(e) => updateConfig({ whiteoutColor: e.target.value })}
-                      className="w-8 h-8 border border-gray-300 rounded cursor-pointer shrink-0"
-                    />
-                    <input
-                      type="text"
-                      value={templateConfig.whiteoutColor || "#ffffff"}
-                      onChange={(e) => updateConfig({ whiteoutColor: e.target.value })}
-                      placeholder="#ffffff"
-                      className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono"
-                    />
-                  </div>
-                  {/* Quick Swatches */}
-                  <div className="flex items-center gap-1 mt-1.5">
-                    {[
-                      { name: "White", val: "#ffffff" },
-                      { name: "Cream", val: "#fef9ee" },
-                      { name: "Off-White", val: "#fdfbf7" },
-                      { name: "Slate", val: "#f1f5f9" },
-                      { name: "Dark", val: "#0f172a" },
-                    ].map((swatch) => (
-                      <button
-                        key={swatch.val}
-                        type="button"
-                        onClick={() => updateConfig({ whiteoutColor: swatch.val })}
-                        title={swatch.name}
-                        className="w-5 h-5 rounded-full border border-gray-300 shadow-2xs hover:scale-110 transition-transform"
-                        style={{ backgroundColor: swatch.val }}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Box Dimensions */}
-              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
-                <div className="flex justify-between font-medium">
-                  <span>Box Width</span>
-                  <span className="font-mono text-blue-700">{templateConfig.whiteoutWidth || 520}px</span>
-                </div>
-                <input
-                  type="range"
-                  min={200}
-                  max={750}
-                  step={10}
-                  value={templateConfig.whiteoutWidth || 520}
-                  onChange={(e) => updateConfig({ whiteoutWidth: Number(e.target.value) })}
-                  className="w-full h-1 bg-gray-200 rounded cursor-pointer"
-                />
-
-                <div className="flex justify-between font-medium pt-1">
-                  <span>Box Height</span>
-                  <span className="font-mono text-blue-700">{templateConfig.whiteoutHeight || 60}px</span>
-                </div>
-                <input
-                  type="range"
-                  min={20}
-                  max={120}
-                  step={2}
-                  value={templateConfig.whiteoutHeight || 60}
-                  onChange={(e) => updateConfig({ whiteoutHeight: Number(e.target.value) })}
-                  className="w-full h-1 bg-gray-200 rounded cursor-pointer"
-                />
-              </div>
+              {/* Name Underneath Box (Size & Colour) */}
+              {renderBoxControls(
+                "Name Underneath Box",
+                templateConfig.coverOldText ?? isCustomBg,
+                (v) => updateConfig({ coverOldText: v }),
+                templateConfig.whiteoutWidth || 520,
+                (w) => updateConfig({ whiteoutWidth: w }),
+                200, 750,
+                templateConfig.whiteoutHeight || 60,
+                (h) => updateConfig({ whiteoutHeight: h }),
+                20, 120,
+                templateConfig.whiteoutColor || "#ffffff",
+                (c) => updateConfig({ whiteoutColor: c })
+              )}
 
               {/* Name Typography & Color */}
               <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
@@ -563,10 +601,10 @@ export default function Step4_Preview() {
                 />
               </div>
 
-              {/* Logo Size */}
+              {/* Logo Image Size */}
               <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
                 <div className="flex justify-between font-medium">
-                  <span>Logo Width</span>
+                  <span>Logo Image Width</span>
                   <span className="font-mono text-blue-700">{templateConfig.logoWidth || 80}px</span>
                 </div>
                 <input
@@ -580,7 +618,7 @@ export default function Step4_Preview() {
                 />
 
                 <div className="flex justify-between font-medium pt-1">
-                  <span>Logo Height</span>
+                  <span>Logo Image Height</span>
                   <span className="font-mono text-blue-700">{templateConfig.logoHeight || 80}px</span>
                 </div>
                 <input
@@ -594,46 +632,30 @@ export default function Step4_Preview() {
                 />
               </div>
 
-              {/* Logo Eraser */}
-              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
-                <div className="flex items-center justify-between font-medium">
-                  <span className="flex items-center gap-1">
-                    <Eraser size={13} className="text-indigo-600" />
-                    Erase Old Logo Underneath
-                  </span>
-                  <label className="relative inline-flex items-center cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="sr-only peer"
-                      checked={templateConfig.coverOldLogo ?? isCustomBg}
-                      onChange={(e) => updateConfig({ coverOldLogo: e.target.checked })}
-                    />
-                    <div className="w-7 h-4 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
-                  </label>
-                </div>
-                <p className="text-[10px] text-gray-500">
-                  Draws a whiteout box underneath your uploaded logo to cover any old badge or graphic.
-                </p>
-                <div className="flex gap-2 pt-1">
-                  <button
-                    type="button"
-                    onClick={() => updateConfig({ logoX: (isCustomBg ? 125 : 0), logoY: (isCustomBg ? -75 : -100) })}
-                    className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
-                  >
-                    Reset Position
-                  </button>
-                </div>
-              </div>
+              {/* Logo Underneath Box (Size & Colour) */}
+              {renderBoxControls(
+                "Logo Underneath Box",
+                templateConfig.coverOldLogo ?? isCustomBg,
+                (v) => updateConfig({ coverOldLogo: v }),
+                templateConfig.oldLogoCoverWidth || 95,
+                (w) => updateConfig({ oldLogoCoverWidth: w }),
+                40, 250,
+                templateConfig.oldLogoCoverHeight || 95,
+                (h) => updateConfig({ oldLogoCoverHeight: h }),
+                40, 250,
+                templateConfig.oldLogoCoverColor || templateConfig.whiteoutColor || "#ffffff",
+                (c) => updateConfig({ oldLogoCoverColor: c })
+              )}
             </div>
           )}
 
           {/* TAB 3: TITLE & SUBTITLE */}
           {activeTunerTab === "title" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {/* Title Visibility & Position */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Title Position & Visibility */}
               <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
                 <div className="flex items-center justify-between font-medium">
-                  <span>Title Element</span>
+                  <span>Title Field</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -644,9 +666,9 @@ export default function Step4_Preview() {
                     <span className="ml-1.5 text-xs">Show</span>
                   </label>
                 </div>
-                <div className="space-y-1.5 pt-1">
+                <div className="space-y-1 pt-1">
                   <div className="flex justify-between text-[11px]">
-                    <span>Title Shift X</span>
+                    <span>Shift X</span>
                     <span className="font-mono text-blue-700">{templateConfig.titleX || 0}px</span>
                   </div>
                   <input
@@ -659,7 +681,7 @@ export default function Step4_Preview() {
                     className="w-full h-1 bg-gray-200 rounded cursor-pointer"
                   />
                   <div className="flex justify-between text-[11px] pt-1">
-                    <span>Title Shift Y</span>
+                    <span>Shift Y</span>
                     <span className="font-mono text-blue-700">{templateConfig.titleY || (isCustomBg ? -140 : 0)}px</span>
                   </div>
                   <input
@@ -674,10 +696,25 @@ export default function Step4_Preview() {
                 </div>
               </div>
 
-              {/* Subtitle Visibility & Position */}
+              {/* Title Underneath Box */}
+              {renderBoxControls(
+                "Title Underneath Box",
+                templateConfig.titleCoverBox ?? false,
+                (v) => updateConfig({ titleCoverBox: v }),
+                templateConfig.titleBoxWidth || 420,
+                (w) => updateConfig({ titleBoxWidth: w }),
+                150, 750,
+                templateConfig.titleBoxHeight || 52,
+                (h) => updateConfig({ titleBoxHeight: h }),
+                20, 120,
+                templateConfig.titleBoxColor || "#ffffff",
+                (c) => updateConfig({ titleBoxColor: c })
+              )}
+
+              {/* Subtitle Position & Visibility */}
               <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
                 <div className="flex items-center justify-between font-medium">
-                  <span>Subtitle Element</span>
+                  <span>Subtitle Field</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -688,9 +725,9 @@ export default function Step4_Preview() {
                     <span className="ml-1.5 text-xs">Show</span>
                   </label>
                 </div>
-                <div className="space-y-1.5 pt-1">
+                <div className="space-y-1 pt-1">
                   <div className="flex justify-between text-[11px]">
-                    <span>Subtitle Shift X</span>
+                    <span>Shift X</span>
                     <span className="font-mono text-blue-700">{templateConfig.subtitleX ?? (templateConfig.titleX || (isCustomBg ? 125 : 0))}px</span>
                   </div>
                   <input
@@ -703,7 +740,7 @@ export default function Step4_Preview() {
                     className="w-full h-1 bg-gray-200 rounded cursor-pointer"
                   />
                   <div className="flex justify-between text-[11px] pt-1">
-                    <span>Subtitle Shift Y</span>
+                    <span>Shift Y</span>
                     <span className="font-mono text-blue-700">{templateConfig.subtitleY ?? ((templateConfig.titleY || (isCustomBg ? -140 : 0)) + 30)}px</span>
                   </div>
                   <input
@@ -718,29 +755,20 @@ export default function Step4_Preview() {
                 </div>
               </div>
 
-              {/* Title & Subtitle Text & Color */}
-              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
-                <div>
-                  <label className="text-[11px] font-medium text-gray-700 block mb-0.5">Custom Title Text</label>
-                  <input
-                    type="text"
-                    value={templateConfig.customTitle || ""}
-                    placeholder="e.g. Certificate of Appreciation"
-                    onChange={(e) => updateConfig({ customTitle: e.target.value })}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-gray-700 block mb-0.5">Custom Subtitle Text</label>
-                  <input
-                    type="text"
-                    value={templateConfig.customSubtitle || ""}
-                    placeholder="e.g. This certificate is awarded to"
-                    onChange={(e) => updateConfig({ customSubtitle: e.target.value })}
-                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
-                  />
-                </div>
-              </div>
+              {/* Subtitle Underneath Box */}
+              {renderBoxControls(
+                "Subtitle Underneath Box",
+                templateConfig.subtitleCoverBox ?? false,
+                (v) => updateConfig({ subtitleCoverBox: v }),
+                templateConfig.subtitleBoxWidth || 360,
+                (w) => updateConfig({ subtitleBoxWidth: w }),
+                100, 650,
+                templateConfig.subtitleBoxHeight || 38,
+                (h) => updateConfig({ subtitleBoxHeight: h }),
+                15, 100,
+                templateConfig.subtitleBoxColor || "#ffffff",
+                (c) => updateConfig({ subtitleBoxColor: c })
+              )}
             </div>
           )}
 
@@ -750,7 +778,7 @@ export default function Step4_Preview() {
               {/* Course Position */}
               <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
                 <div className="flex items-center justify-between font-medium">
-                  <span>Course Element</span>
+                  <span>Course Field</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -791,9 +819,24 @@ export default function Step4_Preview() {
                 </div>
               </div>
 
+              {/* Course Underneath Box */}
+              {renderBoxControls(
+                "Course Underneath Box",
+                templateConfig.courseCoverBox ?? false,
+                (v) => updateConfig({ courseCoverBox: v }),
+                templateConfig.courseBoxWidth || 420,
+                (w) => updateConfig({ courseBoxWidth: w }),
+                150, 750,
+                templateConfig.courseBoxHeight || 45,
+                (h) => updateConfig({ courseBoxHeight: h }),
+                20, 120,
+                templateConfig.courseBoxColor || "#ffffff",
+                (c) => updateConfig({ courseBoxColor: c })
+              )}
+
               {/* Course Styling */}
               <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
-                <div className="font-medium text-gray-800">Course Font Size & Color</div>
+                <div className="font-medium text-gray-800">Course Font & Color</div>
                 <div className="flex items-center gap-2">
                   <input
                     type="color"
@@ -833,7 +876,7 @@ export default function Step4_Preview() {
               {/* Date Position */}
               <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
                 <div className="flex items-center justify-between font-medium">
-                  <span>Issue Date Element</span>
+                  <span>Issue Date Field</span>
                   <label className="relative inline-flex items-center cursor-pointer">
                     <input
                       type="checkbox"
@@ -874,14 +917,29 @@ export default function Step4_Preview() {
                 </div>
               </div>
 
+              {/* Date Underneath Box */}
+              {renderBoxControls(
+                "Date Underneath Box",
+                templateConfig.dateCoverBox ?? false,
+                (v) => updateConfig({ dateCoverBox: v }),
+                templateConfig.dateBoxWidth || 200,
+                (w) => updateConfig({ dateBoxWidth: w }),
+                80, 500,
+                templateConfig.dateBoxHeight || 36,
+                (h) => updateConfig({ dateBoxHeight: h }),
+                15, 90,
+                templateConfig.dateBoxColor || "#ffffff",
+                (c) => updateConfig({ dateBoxColor: c })
+              )}
+
               {/* Date Styling & Prefix */}
               <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
                 <div>
-                  <label className="text-[11px] font-medium text-gray-700 block mb-0.5">Date Label / Prefix</label>
+                  <label className="text-[11px] font-medium text-gray-700 block mb-0.5">Date Prefix</label>
                   <input
                     type="text"
                     value={templateConfig.datePrefix || ""}
-                    placeholder="e.g. Issued: or Date: (or leave blank)"
+                    placeholder="e.g. Issued: or Date: (blank for just date)"
                     onChange={(e) => updateConfig({ datePrefix: e.target.value })}
                     className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
                   />
@@ -952,7 +1010,7 @@ export default function Step4_Preview() {
         {/* CUSTOM TEMPLATE ANCHORED RENDERING (Absolute Positioning matching PDF) */}
         {isCustomBg ? (
           <div className="absolute inset-0 pointer-events-auto">
-            {/* Custom Logo (Draggable + Eraser Box) */}
+            {/* Custom Logo (Draggable + Underneath Box) */}
             {templateConfig.customLogoData && (
               <div
                 className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
@@ -963,14 +1021,14 @@ export default function Step4_Preview() {
                 }}
                 onMouseDown={(e) => handleMouseDown(e, "logo")}
               >
-                {/* Logo Eraser Box */}
-                {(templateConfig.coverOldLogo ?? true) && (
+                {/* Logo Underneath Box */}
+                {(templateConfig.coverOldLogo ?? isCustomBg) && (
                   <div
                     className="absolute rounded pointer-events-none shadow-xs border border-blue-200/40"
                     style={{
                       width: `${templateConfig.oldLogoCoverWidth || 95}px`,
                       height: `${templateConfig.oldLogoCoverHeight || 95}px`,
-                      backgroundColor: templateConfig.whiteoutColor || "#ffffff",
+                      backgroundColor: templateConfig.oldLogoCoverColor || templateConfig.whiteoutColor || "#ffffff",
                       zIndex: 0,
                     }}
                   />
@@ -985,12 +1043,12 @@ export default function Step4_Preview() {
                   }}
                 />
                 <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-900/80 text-white text-[10px] px-2 py-0.5 rounded pointer-events-none whitespace-nowrap shadow-sm">
-                  ✥ Drag Logo (Eraser Active)
+                  ✥ Drag Logo
                 </div>
               </div>
             )}
 
-            {/* Title (Draggable if enabled) */}
+            {/* Title (Draggable + Underneath Box) */}
             {shouldShowTitle && (
               <div
                 className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
@@ -1001,8 +1059,20 @@ export default function Step4_Preview() {
                 }}
                 onMouseDown={(e) => handleMouseDown(e, "title")}
               >
+                {/* Title Underneath Box */}
+                {templateConfig.titleCoverBox && (
+                  <div
+                    className="absolute rounded pointer-events-none shadow-xs border border-blue-200/40"
+                    style={{
+                      width: `${templateConfig.titleBoxWidth || 420}px`,
+                      height: `${templateConfig.titleBoxHeight || 52}px`,
+                      backgroundColor: templateConfig.titleBoxColor || "#ffffff",
+                      zIndex: 0,
+                    }}
+                  />
+                )}
                 <div
-                  className="font-bold tracking-wider select-none text-center"
+                  className="font-bold tracking-wider select-none text-center relative z-10"
                   style={{
                     fontSize: `${(templateConfig.titleFontSize || 26) * 0.8}px`,
                     color: templateConfig.titleColor || style.accent,
@@ -1016,7 +1086,7 @@ export default function Step4_Preview() {
               </div>
             )}
 
-            {/* Subtitle (Draggable if enabled) */}
+            {/* Subtitle (Draggable + Underneath Box) */}
             {shouldShowSubtitle && (
               <div
                 className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
@@ -1027,8 +1097,20 @@ export default function Step4_Preview() {
                 }}
                 onMouseDown={(e) => handleMouseDown(e, "subtitle")}
               >
+                {/* Subtitle Underneath Box */}
+                {templateConfig.subtitleCoverBox && (
+                  <div
+                    className="absolute rounded pointer-events-none shadow-xs border border-blue-200/40"
+                    style={{
+                      width: `${templateConfig.subtitleBoxWidth || 360}px`,
+                      height: `${templateConfig.subtitleBoxHeight || 38}px`,
+                      backgroundColor: templateConfig.subtitleBoxColor || "#ffffff",
+                      zIndex: 0,
+                    }}
+                  />
+                )}
                 <div
-                  className="italic select-none text-center"
+                  className="italic select-none text-center relative z-10"
                   style={{
                     fontSize: `${(templateConfig.subtitleFontSize || 13) * 0.8}px`,
                     color: templateConfig.subtitleColor || (templateConfig.isDarkModeTemplate ? "#e5e7eb" : "#64748b"),
@@ -1042,7 +1124,7 @@ export default function Step4_Preview() {
               </div>
             )}
 
-            {/* Recipient Name (Draggable + Eraser Box with Custom Color) */}
+            {/* Recipient Name (Draggable + Underneath Box with Custom Color) */}
             <div
               className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
               style={{
@@ -1052,7 +1134,7 @@ export default function Step4_Preview() {
               }}
               onMouseDown={(e) => handleMouseDown(e, "name")}
             >
-              {/* Recipient Name Whiteout Box (Eraser with Custom Color) */}
+              {/* Recipient Name Whiteout Box */}
               {(templateConfig.coverOldText ?? true) && (
                 <div
                   className="absolute rounded pointer-events-none shadow-xs border border-blue-200/40"
@@ -1076,11 +1158,11 @@ export default function Step4_Preview() {
                 {displayName}
               </div>
               <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-900/80 text-white text-[10px] px-2 py-0.5 rounded pointer-events-none whitespace-nowrap shadow-sm">
-                ✥ Drag Recipient Name (Eraser Active)
+                ✥ Drag Recipient Name
               </div>
             </div>
 
-            {/* Course Name (Draggable if enabled) */}
+            {/* Course Name (Draggable + Underneath Box) */}
             {shouldShowCourse && (
               <div
                 className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
@@ -1091,8 +1173,20 @@ export default function Step4_Preview() {
                 }}
                 onMouseDown={(e) => handleMouseDown(e, "course")}
               >
+                {/* Course Underneath Box */}
+                {templateConfig.courseCoverBox && (
+                  <div
+                    className="absolute rounded pointer-events-none shadow-xs border border-blue-200/40"
+                    style={{
+                      width: `${templateConfig.courseBoxWidth || 420}px`,
+                      height: `${templateConfig.courseBoxHeight || 45}px`,
+                      backgroundColor: templateConfig.courseBoxColor || "#ffffff",
+                      zIndex: 0,
+                    }}
+                  />
+                )}
                 <div
-                  className="font-semibold text-sm leading-snug max-w-md text-center select-none"
+                  className="font-semibold text-sm leading-snug max-w-md text-center select-none relative z-10"
                   style={{
                     color: templateConfig.courseColor || "#374151",
                     fontSize: `${(templateConfig.courseFontSize || 22) * 0.8}px`,
@@ -1106,7 +1200,7 @@ export default function Step4_Preview() {
               </div>
             )}
 
-            {/* Date (Draggable if enabled) */}
+            {/* Date (Draggable + Underneath Box) */}
             {shouldShowDate && (
               <div
                 className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
@@ -1117,8 +1211,20 @@ export default function Step4_Preview() {
                 }}
                 onMouseDown={(e) => handleMouseDown(e, "date")}
               >
+                {/* Date Underneath Box */}
+                {templateConfig.dateCoverBox && (
+                  <div
+                    className="absolute rounded pointer-events-none shadow-xs border border-blue-200/40"
+                    style={{
+                      width: `${templateConfig.dateBoxWidth || 200}px`,
+                      height: `${templateConfig.dateBoxHeight || 36}px`,
+                      backgroundColor: templateConfig.dateBoxColor || "#ffffff",
+                      zIndex: 0,
+                    }}
+                  />
+                )}
                 <div
-                  className="text-xs select-none text-center"
+                  className="text-xs select-none text-center relative z-10"
                   style={{
                     color: templateConfig.dateColor || "#6b7280",
                     fontSize: `${(templateConfig.dateFontSize || 16) * 0.8}px`,

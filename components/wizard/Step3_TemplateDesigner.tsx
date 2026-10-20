@@ -33,6 +33,7 @@ export interface TemplateConfig {
   coverOldLogo?: boolean;
   oldLogoCoverWidth?: number;
   oldLogoCoverHeight?: number;
+  oldLogoCoverColor?: string;
   customBackgroundData?: string; // base64 URI
   customLogoData?: string; // base64 URI
   customFontData?: string; // base64 URI
@@ -43,6 +44,24 @@ export interface TemplateConfig {
   whiteoutWidth?: number; // Width of whiteout box
   whiteoutHeight?: number; // Height of whiteout box
   whiteoutColor?: string;
+
+  // Box underneath controls for every field
+  titleCoverBox?: boolean;
+  titleBoxWidth?: number;
+  titleBoxHeight?: number;
+  titleBoxColor?: string;
+  subtitleCoverBox?: boolean;
+  subtitleBoxWidth?: number;
+  subtitleBoxHeight?: number;
+  subtitleBoxColor?: string;
+  courseCoverBox?: boolean;
+  courseBoxWidth?: number;
+  courseBoxHeight?: number;
+  courseBoxColor?: string;
+  dateCoverBox?: boolean;
+  dateBoxWidth?: number;
+  dateBoxHeight?: number;
+  dateBoxColor?: string;
 
   // Element Visibility Toggles
   showTitle?: boolean;
