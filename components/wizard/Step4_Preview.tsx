@@ -1,14 +1,15 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronLeft, ChevronRight, AlertTriangle } from "lucide-react";
+import { ChevronLeft, ChevronRight, AlertTriangle, Sliders, Eraser, MoveHorizontal, MoveVertical, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useStore } from "@/lib/store";
 
 export default function Step4_Preview() {
-  const { mappedRows, templateConfig, setStep } = useStore();
+  const { mappedRows, templateConfig, setTemplateConfig, setStep } = useStore();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showTuner, setShowTuner] = useState(false);
 
   const longestNameIndex = useMemo(() => {
     if (mappedRows.length === 0) return 0;
@@ -48,6 +49,30 @@ export default function Step4_Preview() {
   const style = TEMPLATE_STYLES[templateConfig.templateId] ?? TEMPLATE_STYLES["academic-gold"];
   const displayName = row.full_name || "(no name)";
 
+  const isCustomBg = Boolean(templateConfig.customBackgroundData || templateConfig.templateId === "custom");
+
+  const shouldShowTitle =
+    !templateConfig.isCleanMode &&
+    (templateConfig.showTitle ?? !isCustomBg);
+
+  const shouldShowSubtitle =
+    !templateConfig.isCleanMode &&
+    (templateConfig.showSubtitle ?? !isCustomBg);
+
+  const shouldShowBody =
+    !templateConfig.isCleanMode &&
+    (templateConfig.showBodyPhrase ?? !isCustomBg);
+
+  const shouldShowCourse = templateConfig.showCourse ?? true;
+  const shouldShowDate = templateConfig.showDate ?? true;
+  const shouldShowSignatures =
+    templateConfig.showSignatures ??
+    (templateConfig.templateId === "prestige-geometric" && !templateConfig.customBackgroundData);
+
+  const updateConfig = (patch: Partial<typeof templateConfig>) => {
+    setTemplateConfig({ ...templateConfig, ...patch });
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
@@ -57,20 +82,213 @@ export default function Step4_Preview() {
             Review how each certificate will look. Navigate through all recipients.
           </p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setCurrentIndex(longestNameIndex)}
-          className="gap-1.5 shrink-0"
-        >
-          <AlertTriangle size={14} className="text-amber-500" />
-          Highlight Outlier
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowTuner(!showTuner)}
+            className="gap-1.5 shrink-0 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
+          >
+            <Sliders size={14} />
+            {showTuner ? "Hide Position Tuner" : "Tune Text Position"}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setCurrentIndex(longestNameIndex)}
+            className="gap-1.5 shrink-0"
+          >
+            <AlertTriangle size={14} className="text-amber-500" />
+            Highlight Outlier
+          </Button>
+        </div>
       </div>
 
-      {/* Certificate Preview */}
+      {/* Live Position & Alignment Tuner Toolbar (collapsible or persistent) */}
+      {(showTuner || isCustomBg) && (
+        <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-3 text-xs text-gray-700">
+          <div className="flex items-center justify-between font-semibold text-blue-900">
+            <span className="flex items-center gap-1.5">
+              <Sliders size={15} />
+              Live Text Position & Eraser Controls
+            </span>
+            <span className="text-[11px] font-normal text-blue-700">Changes reflect immediately below</span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
+            {/* Horizontal Shift */}
+            <div className="bg-white p-2.5 rounded-lg border border-blue-100 space-y-1.5">
+              <div className="flex items-center justify-between font-medium">
+                <span className="flex items-center gap-1">
+                  <MoveHorizontal size={13} className="text-blue-600" />
+                  Name Shift X (Left/Right)
+                </span>
+                <span className="font-mono text-blue-700">{templateConfig.nameX || 0}px</span>
+              </div>
+              <input
+                type="range"
+                min={-250}
+                max={250}
+                step={5}
+                value={templateConfig.nameX || 0}
+                onChange={(e) => updateConfig({ nameX: Number(e.target.value) })}
+                className="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer"
+              />
+              <div className="flex justify-between gap-1">
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ nameX: (templateConfig.nameX || 0) - 15 })}
+                  className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-[11px]"
+                >
+                  ← Left (-15)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ nameX: 0 })}
+                  className="px-1.5 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-[10px]"
+                >
+                  Center (0)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ nameX: (templateConfig.nameX || 0) + 15 })}
+                  className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-[11px]"
+                >
+                  Right (+15) →
+                </button>
+              </div>
+            </div>
+
+            {/* Vertical Shift */}
+            <div className="bg-white p-2.5 rounded-lg border border-blue-100 space-y-1.5">
+              <div className="flex items-center justify-between font-medium">
+                <span className="flex items-center gap-1">
+                  <MoveVertical size={13} className="text-blue-600" />
+                  Name Shift Y (Up/Down)
+                </span>
+                <span className="font-mono text-blue-700">{templateConfig.nameY || 0}px</span>
+              </div>
+              <input
+                type="range"
+                min={-200}
+                max={200}
+                step={5}
+                value={templateConfig.nameY || 0}
+                onChange={(e) => updateConfig({ nameY: Number(e.target.value) })}
+                className="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer"
+              />
+              <div className="flex justify-between gap-1">
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ nameY: (templateConfig.nameY || 0) - 15 })}
+                  className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-[11px]"
+                >
+                  ↑ Up (-15)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ nameY: 0 })}
+                  className="px-1.5 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-[10px]"
+                >
+                  Default (0)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateConfig({ nameY: (templateConfig.nameY || 0) + 15 })}
+                  className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded text-[11px]"
+                >
+                  Down (+15) ↓
+                </button>
+              </div>
+            </div>
+
+            {/* Whiteout / Erase Old Text */}
+            <div className="bg-white p-2.5 rounded-lg border border-blue-100 space-y-1.5">
+              <div className="flex items-center justify-between font-medium">
+                <span className="flex items-center gap-1">
+                  <Eraser size={13} className="text-blue-600" />
+                  Erase Placeholder Text
+                </span>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="sr-only peer"
+                    checked={templateConfig.coverOldText || false}
+                    onChange={(e) => updateConfig({ coverOldText: e.target.checked })}
+                  />
+                  <div className="w-7 h-4 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
+                </label>
+              </div>
+              <p className="text-[10px] text-gray-500">
+                Paints white box over old &quot;Name Surname&quot; text
+              </p>
+              {templateConfig.coverOldText && (
+                <div className="pt-1">
+                  <div className="flex justify-between text-[10px] text-gray-500">
+                    <span>Width: {templateConfig.whiteoutWidth || 380}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={180}
+                    max={600}
+                    step={10}
+                    value={templateConfig.whiteoutWidth || 380}
+                    onChange={(e) => updateConfig({ whiteoutWidth: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Quick Visibility Toggles */}
+            <div className="bg-white p-2.5 rounded-lg border border-blue-100 space-y-1">
+              <div className="font-medium text-gray-800 mb-1">Elements On/Off</div>
+              <div className="grid grid-cols-2 gap-1 text-[11px]">
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={shouldShowTitle}
+                    onChange={(e) => updateConfig({ showTitle: e.target.checked, isCleanMode: false })}
+                    className="rounded text-blue-600"
+                  />
+                  <span>Title</span>
+                </label>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={shouldShowSubtitle}
+                    onChange={(e) => updateConfig({ showSubtitle: e.target.checked, isCleanMode: false })}
+                    className="rounded text-blue-600"
+                  />
+                  <span>Subtitle</span>
+                </label>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={shouldShowCourse}
+                    onChange={(e) => updateConfig({ showCourse: e.target.checked })}
+                    className="rounded text-blue-600"
+                  />
+                  <span>Course</span>
+                </label>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={shouldShowDate}
+                    onChange={(e) => updateConfig({ showDate: e.target.checked })}
+                    className="rounded text-blue-600"
+                  />
+                  <span>Date</span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Certificate Preview Card */}
       <div
-        className="relative w-full rounded-xl overflow-hidden shadow-lg"
+        className="relative w-full rounded-xl overflow-hidden shadow-lg select-none"
         style={{ 
           borderColor: templateConfig.customBackgroundData ? "transparent" : style.border, 
           backgroundColor: templateConfig.customBackgroundData ? "transparent" : style.bg, 
@@ -84,19 +302,16 @@ export default function Step4_Preview() {
         {/* Corner Geometric Graphics (only for prestige-geometric without custom image) */}
         {templateConfig.templateId === "prestige-geometric" && !templateConfig.customBackgroundData && (
           <>
-            {/* Left geometric flair */}
             <svg className="absolute inset-y-0 left-0 w-24 h-full pointer-events-none z-0" viewBox="0 0 100 600" preserveAspectRatio="none">
               <polygon points="0,0 70,0 115,310 45,600 0,600" fill="#0f2847" />
               <polygon points="0,360 110,290 75,240 0,290" fill="#f59e0b" />
               <polygon points="0,0 45,0 0,110" fill="#64748b" />
             </svg>
-            {/* Right geometric flair */}
             <svg className="absolute inset-y-0 right-0 w-24 h-full pointer-events-none z-0" viewBox="0 0 100 600" preserveAspectRatio="none">
               <polygon points="100,0 30,0 -15,290 55,600 100,600" fill="#0f2847" />
               <polygon points="100,240 -10,310 25,360 100,310" fill="#f59e0b" />
               <polygon points="100,600 55,600 100,490" fill="#64748b" />
             </svg>
-            {/* Double border for prestige */}
             <div className="absolute inset-x-12 inset-y-4 rounded-lg border-2 border-slate-300 pointer-events-none z-0">
               <div className="absolute inset-1 rounded border border-slate-200 pointer-events-none" />
             </div>
@@ -111,6 +326,7 @@ export default function Step4_Preview() {
           />
         )}
 
+        {/* Dynamic Text Container */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 py-6 z-10">
           
           {/* Custom Logo */}
@@ -122,12 +338,12 @@ export default function Step4_Preview() {
             />
           )}
 
-          {/* Title */}
-          {!templateConfig.isCleanMode && (
+          {/* Title & Subtitle */}
+          {shouldShowTitle && (
             templateConfig.templateId === "prestige-geometric" && !templateConfig.customTitle ? (
               <div 
                 className="mb-2"
-                style={{ transform: `translateY(${templateConfig.titleY || 0}px)` }}
+                style={{ transform: `translate(${templateConfig.titleX || 0}px, ${templateConfig.titleY || 0}px)` }}
               >
                 <div 
                   className="font-serif font-black tracking-widest text-[#0f2847]"
@@ -146,18 +362,20 @@ export default function Step4_Preview() {
                   <div className="w-1.5 h-1.5 rotate-45 bg-amber-500" />
                   <div className="w-16 h-px bg-amber-500" />
                 </div>
-                <div 
-                  className="italic"
-                  style={{ 
-                    fontSize: templateConfig.subtitleFontSize ? `${templateConfig.subtitleFontSize * 0.8}px` : "0.75rem",
-                    color: templateConfig.subtitleColor || (templateConfig.isDarkModeTemplate ? "#e5e7eb" : "#64748b")
-                  }}
-                >
-                  {templateConfig.customSubtitle || "This certificate is proudly presented to"}
-                </div>
+                {shouldShowSubtitle && (
+                  <div 
+                    className="italic"
+                    style={{ 
+                      fontSize: templateConfig.subtitleFontSize ? `${templateConfig.subtitleFontSize * 0.8}px` : "0.75rem",
+                      color: templateConfig.subtitleColor || (templateConfig.isDarkModeTemplate ? "#e5e7eb" : "#64748b")
+                    }}
+                  >
+                    {templateConfig.customSubtitle || "This certificate is proudly presented to"}
+                  </div>
+                )}
               </div>
             ) : (
-              <div style={{ transform: `translateY(${templateConfig.titleY || 0}px)` }}>
+              <div style={{ transform: `translate(${templateConfig.titleX || 0}px, ${templateConfig.titleY || 0}px)` }}>
                 <div 
                   className="font-bold mb-1"
                   style={{ 
@@ -169,41 +387,57 @@ export default function Step4_Preview() {
                 </div>
                 <div className="w-40 h-px mb-3 mx-auto" style={{ backgroundColor: style.border }} />
                 
-                {/* Sub heading */}
-                <div 
-                  className="italic mb-2" 
-                  style={{ 
-                    fontSize: templateConfig.subtitleFontSize ? `${templateConfig.subtitleFontSize * 0.8}px` : "0.75rem",
-                    color: templateConfig.subtitleColor || (templateConfig.isDarkModeTemplate ? "#e5e7eb" : "#6b7280") 
-                  }}
-                >
-                  {templateConfig.customSubtitle || "This certifies that"}
-                </div>
+                {shouldShowSubtitle && (
+                  <div 
+                    className="italic mb-2" 
+                    style={{ 
+                      fontSize: templateConfig.subtitleFontSize ? `${templateConfig.subtitleFontSize * 0.8}px` : "0.75rem",
+                      color: templateConfig.subtitleColor || (templateConfig.isDarkModeTemplate ? "#e5e7eb" : "#6b7280") 
+                    }}
+                  >
+                    {templateConfig.customSubtitle || "This certifies that"}
+                  </div>
+                )}
               </div>
             )
           )}
 
-          {/* Name */}
+          {/* Recipient Name with optional Whiteout Eraser Box */}
           <div
-            className={`font-bold leading-tight break-words max-w-full ${templateConfig.coverOldText ? "bg-white px-8 py-1 rounded" : ""}`}
+            className="relative flex items-center justify-center my-1"
             style={{
-              color: templateConfig.templateId === "prestige-geometric" && !templateConfig.nameColor ? "#0f2847" : templateConfig.nameColor,
-              fontSize: `clamp(14px, ${templateConfig.nameFontSize * 0.8}px, 42px)`,
-              fontFamily: templateConfig.customFontName ? "sans-serif" : "inherit",
-              transform: `translateY(${templateConfig.nameY || 0}px)`
+              transform: `translate(${templateConfig.nameX || 0}px, ${templateConfig.nameY || 0}px)`,
             }}
           >
-            {displayName}
+            {templateConfig.coverOldText && (
+              <div
+                className="absolute bg-white rounded pointer-events-none shadow-xs"
+                style={{
+                  width: `${templateConfig.whiteoutWidth || 380}px`,
+                  height: `${templateConfig.whiteoutHeight || 46}px`,
+                  zIndex: 0,
+                }}
+              />
+            )}
+            <div
+              className="font-bold leading-tight break-words max-w-full relative z-10 px-4"
+              style={{
+                color: templateConfig.templateId === "prestige-geometric" && !templateConfig.nameColor ? "#0f2847" : templateConfig.nameColor,
+                fontSize: `clamp(14px, ${templateConfig.nameFontSize * 0.8}px, 42px)`,
+                fontFamily: templateConfig.customFontName ? "sans-serif" : "inherit",
+              }}
+            >
+              {displayName}
+            </div>
           </div>
 
-          {!templateConfig.isCleanMode && (
-            <>
-              {/* Underline */}
+          {/* Underline and Body Phrase */}
+          {shouldShowBody && (
+            <div style={{ transform: `translateX(${templateConfig.nameX || 0}px)` }}>
               <div
-                className="w-3/4 h-px my-2"
+                className="w-3/4 h-px my-2 mx-auto"
                 style={{ backgroundColor: templateConfig.templateId === "prestige-geometric" ? "#f59e0b" : style.accent + "60" }}
               />
-              
               <div 
                 className="mb-1" 
                 style={{ 
@@ -216,33 +450,37 @@ export default function Step4_Preview() {
                     ? "for successfully completing the curriculum and demonstrating mastery in"
                     : "has successfully completed")}
               </div>
-            </>
+            </div>
           )}
 
-          {/* Course */}
-          <div
-            className={`font-semibold text-sm leading-snug max-w-xs ${templateConfig.coverOldText ? "bg-white px-4 py-1 rounded mt-1" : ""}`}
-            style={{ 
-              color: templateConfig.templateId === "prestige-geometric" ? "#0f2847" : templateConfig.courseColor,
-              transform: `translateY(${templateConfig.courseY || 0}px)`
-            }}
-          >
-            {row.course || "(no course)"}
-          </div>
+          {/* Course Name */}
+          {shouldShowCourse && (
+            <div
+              className="font-semibold text-sm leading-snug max-w-md my-0.5"
+              style={{ 
+                color: templateConfig.templateId === "prestige-geometric" ? "#0f2847" : templateConfig.courseColor,
+                transform: `translate(${templateConfig.courseX || 0}px, ${templateConfig.courseY || 0}px)`
+              }}
+            >
+              {row.course || "(no course)"}
+            </div>
+          )}
 
           {/* Date */}
-          <div 
-            className="mt-2 text-xs" 
-            style={{ 
-              color: templateConfig.isDarkModeTemplate ? "#d1d5db" : "#9ca3af",
-              transform: `translateY(${templateConfig.dateY || 0}px)` 
-            }}
-          >
-            {(templateConfig.datePrefix || "Issued:")} {row.date || "—"}
-          </div>
+          {shouldShowDate && (
+            <div 
+              className="mt-1 text-xs" 
+              style={{ 
+                color: templateConfig.isDarkModeTemplate ? "#d1d5db" : "#9ca3af",
+                transform: `translate(${templateConfig.dateX || 0}px, ${templateConfig.dateY || 0}px)` 
+              }}
+            >
+              {(templateConfig.datePrefix || "Issued:")} {row.date || "—"}
+            </div>
+          )}
 
           {/* Dual Signatures & Center Seal */}
-          {(templateConfig.showSignatures ?? (templateConfig.templateId === "prestige-geometric")) && (
+          {shouldShowSignatures && (
             <div className="w-full flex items-end justify-between px-16 mt-3">
               {/* Left Signature */}
               <div className="text-center w-36">
@@ -258,13 +496,12 @@ export default function Step4_Preview() {
               {templateConfig.templateId === "prestige-geometric" ? (
                 <div className="flex flex-col items-center relative -mb-1">
                   <div className="flex gap-1.5 -mb-2">
-                    <div className="w-3 h-5 bg-amber-500 [clip-path:polygon(0_0,100%_0,100%_100%,50%_75%,0_100%)]" />
-                    <div className="w-3 h-5 bg-amber-500 [clip-path:polygon(0_0,100%_0,100%_100%,50%_75%,0_100%)]" />
+                    <div className="w-3 h-8 bg-amber-500 rotate-[-15deg] rounded-b-sm" />
+                    <div className="w-3 h-8 bg-amber-500 rotate-[15deg] rounded-b-sm" />
                   </div>
-                  <div className="w-11 h-11 rounded-full bg-amber-500 p-0.5 shadow flex items-center justify-center">
-                    <div className="w-full h-full rounded-full border border-dashed border-amber-200 bg-[#0f2847] flex flex-col items-center justify-center text-amber-400 text-[6px] font-bold uppercase leading-tight">
-                      <span>TOP</span>
-                      <span>AWARD</span>
+                  <div className="w-12 h-12 rounded-full bg-gradient-to-br from-amber-300 via-amber-500 to-amber-600 flex items-center justify-center shadow-md border-2 border-amber-200">
+                    <div className="w-9 h-9 rounded-full border border-amber-200/60 flex items-center justify-center bg-[#0f2847]">
+                      <span className="text-[7px] font-black text-amber-300 tracking-wider">AWARD</span>
                     </div>
                   </div>
                 </div>

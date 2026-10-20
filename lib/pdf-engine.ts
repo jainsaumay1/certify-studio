@@ -227,16 +227,22 @@ export async function renderCertificate(
   const accentColor = hexToRgb(style.accent);
 
   // Title
-  if (!templateConfig.isCleanMode) {
+  const shouldShowTitle =
+    !templateConfig.isCleanMode &&
+    (templateConfig.showTitle ??
+      (templateConfig.templateId !== "custom" && !templateConfig.customBackgroundData));
+
+  if (shouldShowTitle) {
     const customTitleColor = templateConfig.titleColor ? hexToRgb(templateConfig.titleColor) : accentColor;
     const titleOffsetY = templateConfig.titleY || 0;
+    const titleOffsetX = templateConfig.titleX || 0;
 
     if (templateConfig.templateId === "prestige-geometric" && !templateConfig.customTitle) {
       const certText = "C E R T I F I C A T E";
       const certSize = templateConfig.titleFontSize || 26;
       const certWidth = boldFont.widthOfTextAtSize(certText, certSize);
       page.drawText(certText, {
-        x: (width - certWidth) / 2,
+        x: (width - certWidth) / 2 + titleOffsetX,
         y: height - 85 - titleOffsetY,
         font: boldFont,
         size: certSize,
@@ -247,7 +253,7 @@ export async function renderCertificate(
       const achSize = Math.max(10, Math.round(certSize * 0.5));
       const achWidth = boldFont.widthOfTextAtSize(achText, achSize);
       page.drawText(achText, {
-        x: (width - achWidth) / 2,
+        x: (width - achWidth) / 2 + titleOffsetX,
         y: height - 85 - titleOffsetY - achSize - 6,
         font: boldFont,
         size: achSize,
@@ -258,38 +264,44 @@ export async function renderCertificate(
       const lineLen = 70;
       const divY = height - 85 - titleOffsetY - achSize - 18;
       page.drawLine({
-        start: { x: width / 2 - lineLen - 8, y: divY },
-        end: { x: width / 2 - 8, y: divY },
+        start: { x: width / 2 - lineLen - 8 + titleOffsetX, y: divY },
+        end: { x: width / 2 - 8 + titleOffsetX, y: divY },
         thickness: 1,
         color: rgb(0.96, 0.65, 0.12),
       });
-      page.drawSvgPath(`M ${width / 2} ${divY + 3} L ${width / 2 + 4} ${divY} L ${width / 2} ${divY - 3} L ${width / 2 - 4} ${divY} Z`, {
+      page.drawSvgPath(`M ${width / 2 + titleOffsetX} ${divY + 3} L ${width / 2 + 4 + titleOffsetX} ${divY} L ${width / 2 + titleOffsetX} ${divY - 3} L ${width / 2 - 4 + titleOffsetX} ${divY} Z`, {
         color: rgb(0.96, 0.65, 0.12),
       });
       page.drawLine({
-        start: { x: width / 2 + 8, y: divY },
-        end: { x: width / 2 + lineLen + 8, y: divY },
+        start: { x: width / 2 + 8 + titleOffsetX, y: divY },
+        end: { x: width / 2 + lineLen + 8 + titleOffsetX, y: divY },
         thickness: 1,
         color: rgb(0.96, 0.65, 0.12),
       });
 
-      const subText = templateConfig.customSubtitle || "This certificate is proudly presented to";
-      const subSize = templateConfig.subtitleFontSize || 12;
-      const subWidth = italicFont.widthOfTextAtSize(subText, subSize);
-      const subCustomCol = templateConfig.subtitleColor ? hexToRgb(templateConfig.subtitleColor) : null;
-      page.drawText(subText, {
-        x: (width - subWidth) / 2,
-        y: divY - subSize - 10,
-        font: italicFont,
-        size: subSize,
-        color: subCustomCol ? rgb(subCustomCol.r, subCustomCol.g, subCustomCol.b) : rgb(0.35, 0.42, 0.5),
-      });
+      const shouldShowSub =
+        !templateConfig.isCleanMode &&
+        (templateConfig.showSubtitle ?? !templateConfig.customBackgroundData);
+
+      if (shouldShowSub) {
+        const subText = templateConfig.customSubtitle || "This certificate is proudly presented to";
+        const subSize = templateConfig.subtitleFontSize || 12;
+        const subWidth = italicFont.widthOfTextAtSize(subText, subSize);
+        const subCustomCol = templateConfig.subtitleColor ? hexToRgb(templateConfig.subtitleColor) : null;
+        page.drawText(subText, {
+          x: (width - subWidth) / 2 + titleOffsetX,
+          y: divY - subSize - 10,
+          font: italicFont,
+          size: subSize,
+          color: subCustomCol ? rgb(subCustomCol.r, subCustomCol.g, subCustomCol.b) : rgb(0.35, 0.42, 0.5),
+        });
+      }
     } else {
       const titleText = templateConfig.customTitle || style.title;
       const titleSize = templateConfig.titleFontSize || 22;
       const titleWidth = boldFont.widthOfTextAtSize(titleText, titleSize);
       page.drawText(titleText, {
-        x: (width - titleWidth) / 2,
+        x: (width - titleWidth) / 2 + titleOffsetX,
         y: height - 90 - titleOffsetY,
         font: boldFont,
         size: titleSize,
@@ -298,30 +310,36 @@ export async function renderCertificate(
 
       // Divider
       page.drawLine({
-        start: { x: width * 0.2, y: height - 90 - titleOffsetY - 18 },
-        end: { x: width * 0.8, y: height - 90 - titleOffsetY - 18 },
+        start: { x: width * 0.2 + titleOffsetX, y: height - 90 - titleOffsetY - 18 },
+        end: { x: width * 0.8 + titleOffsetX, y: height - 90 - titleOffsetY - 18 },
         thickness: 1.5,
         color: rgb(borderColor.r, borderColor.g, borderColor.b),
       });
 
-      // "This certifies that" / Subtitle
-      const subText = templateConfig.customSubtitle || "This certifies that";
-      const subSize = templateConfig.subtitleFontSize || 14;
-      const subWidth = italicFont.widthOfTextAtSize(subText, subSize);
-      const subCustomCol = templateConfig.subtitleColor ? hexToRgb(templateConfig.subtitleColor) : null;
-      const subDefaultCol = templateConfig.isDarkModeTemplate ? rgb(0.9, 0.9, 0.9) : rgb(0.4, 0.4, 0.4);
+      const shouldShowSub =
+        !templateConfig.isCleanMode &&
+        (templateConfig.showSubtitle ??
+          (templateConfig.templateId !== "custom" && !templateConfig.customBackgroundData));
 
-      page.drawText(subText, {
-        x: (width - subWidth) / 2,
-        y: height - 90 - titleOffsetY - 18 - subSize - 18,
-        font: italicFont,
-        size: subSize,
-        color: subCustomCol ? rgb(subCustomCol.r, subCustomCol.g, subCustomCol.b) : subDefaultCol,
-      });
+      if (shouldShowSub) {
+        const subText = templateConfig.customSubtitle || "This certifies that";
+        const subSize = templateConfig.subtitleFontSize || 14;
+        const subWidth = italicFont.widthOfTextAtSize(subText, subSize);
+        const subCustomCol = templateConfig.subtitleColor ? hexToRgb(templateConfig.subtitleColor) : null;
+        const subDefaultCol = templateConfig.isDarkModeTemplate ? rgb(0.9, 0.9, 0.9) : rgb(0.4, 0.4, 0.4);
+
+        page.drawText(subText, {
+          x: (width - subWidth) / 2 + titleOffsetX,
+          y: height - 90 - titleOffsetY - 18 - subSize - 18,
+          font: italicFont,
+          size: subSize,
+          color: subCustomCol ? rgb(subCustomCol.r, subCustomCol.g, subCustomCol.b) : subDefaultCol,
+        });
+      }
     }
   }
 
-  // Recipient Name — auto-scaled font
+  // Recipient Name — auto-scaled font with Horizontal & Vertical offsets
   const nameFontSize = auditResult?.resolvedFontSize ?? templateConfig.nameFontSize;
   const displayName = auditResult?.resolvedName ?? recipientName;
   const nameColor = hexToRgb(templateConfig.nameColor);
@@ -329,31 +347,41 @@ export async function renderCertificate(
   
   const baseNameY = height - 148 - nameFontSize - 20;
   const finalNameY = baseNameY - (templateConfig.nameY || 0); // subtract to push down
+  const nameCenterX = (width / 2) + (templateConfig.nameX || 0);
+  const finalNameX = Math.max(margin, nameCenterX - (nameWidth / 2));
   
+  // Whiteout background to cleanly erase pre-printed placeholder text (like "Name Surname")
   if (templateConfig.coverOldText) {
+    const woWidth = templateConfig.whiteoutWidth || Math.max(380, nameWidth + 60);
+    const woHeight = templateConfig.whiteoutHeight || (nameFontSize + 24);
     page.drawRectangle({
-      x: width * 0.1,
-      y: finalNameY - 10,
-      width: width * 0.8,
-      height: nameFontSize + 30,
+      x: Math.max(0, nameCenterX - (woWidth / 2)),
+      y: finalNameY - (woHeight - nameFontSize) / 2,
+      width: woWidth,
+      height: woHeight,
       color: rgb(1, 1, 1),
     });
   }
 
   page.drawText(displayName, {
-    x: Math.max(margin + 10, (width - nameWidth) / 2),
+    x: finalNameX,
     y: finalNameY,
     font: boldFont,
     size: nameFontSize,
     color: rgb(nameColor.r, nameColor.g, nameColor.b),
   });
 
-  if (!templateConfig.isCleanMode) {
+  const shouldShowBody =
+    !templateConfig.isCleanMode &&
+    (templateConfig.showBodyPhrase ??
+      (templateConfig.templateId !== "custom" && !templateConfig.customBackgroundData));
+
+  if (shouldShowBody) {
     const isPrestige = templateConfig.templateId === "prestige-geometric";
     // Name underline
     page.drawLine({
-      start: { x: width * 0.15, y: baseNameY - 8 },
-      end: { x: width * 0.85, y: baseNameY - 8 },
+      start: { x: nameCenterX - width * 0.35, y: baseNameY - 8 },
+      end: { x: nameCenterX + width * 0.35, y: baseNameY - 8 },
       thickness: isPrestige ? 1 : 0.75,
       color: isPrestige ? rgb(0.96, 0.65, 0.12) : rgb(accentColor.r, accentColor.g, accentColor.b),
     });
@@ -370,7 +398,7 @@ export async function renderCertificate(
     const bodyDefaultCol = templateConfig.isDarkModeTemplate ? rgb(0.9, 0.9, 0.9) : rgb(0.4, 0.4, 0.4);
 
     page.drawText(completedText, {
-      x: (width - completedWidth) / 2,
+      x: nameCenterX - (completedWidth / 2),
       y: baseNameY - 34,
       font: regularFont,
       size: completedSize,
@@ -379,49 +407,49 @@ export async function renderCertificate(
   }
 
   // Course Name
-  const courseSize = templateConfig.courseFontSize;
-  const courseColor = hexToRgb(templateConfig.courseColor);
-  const courseWidth = boldFont.widthOfTextAtSize(courseName, courseSize);
-  
-  const baseCourseY = baseNameY - 36 - courseSize - 16;
+  const shouldShowCourse = templateConfig.showCourse ?? true;
+  const baseCourseY = baseNameY - 36 - templateConfig.courseFontSize - 16;
   const finalCourseY = baseCourseY - (templateConfig.courseY || 0);
 
-  if (templateConfig.coverOldText) {
-    page.drawRectangle({
-      x: width * 0.15,
-      y: finalCourseY - 5,
-      width: width * 0.7,
-      height: courseSize + 15,
-      color: rgb(1, 1, 1),
+  if (shouldShowCourse) {
+    const courseSize = templateConfig.courseFontSize;
+    const courseColor = hexToRgb(templateConfig.courseColor);
+    const courseWidth = boldFont.widthOfTextAtSize(courseName, courseSize);
+    const courseCenterX = (width / 2) + (templateConfig.courseX || 0);
+    const finalCourseX = Math.max(margin, courseCenterX - (courseWidth / 2));
+
+    page.drawText(courseName, {
+      x: finalCourseX,
+      y: finalCourseY,
+      font: boldFont,
+      size: courseSize,
+      color: rgb(courseColor.r, courseColor.g, courseColor.b),
     });
   }
 
-  page.drawText(courseName, {
-    x: Math.max(margin + 10, (width - courseWidth) / 2),
-    y: finalCourseY,
-    font: boldFont,
-    size: courseSize,
-    color: rgb(courseColor.r, courseColor.g, courseColor.b),
-  });
-
   // Issue Date
-  const dateSize = templateConfig.dateFontSize;
-  const dateColor = hexToRgb(templateConfig.dateColor);
-  const datePrefix = templateConfig.datePrefix || "Issued:";
-  const dateText = `${datePrefix} ${issueDate}`;
-  const dateWidth = regularFont.widthOfTextAtSize(dateText, dateSize);
-  
+  const shouldShowDate = templateConfig.showDate ?? true;
   const baseDateY = baseCourseY - 50;
   const finalDateY = baseDateY - (templateConfig.dateY || 0);
-  const staticColor = templateConfig.isDarkModeTemplate ? rgb(0.9, 0.9, 0.9) : rgb(0.4, 0.4, 0.4);
 
-  page.drawText(dateText, {
-    x: (width - dateWidth) / 2,
-    y: finalDateY,
-    font: regularFont,
-    size: dateSize,
-    color: templateConfig.isDarkModeTemplate ? staticColor : rgb(dateColor.r, dateColor.g, dateColor.b),
-  });
+  if (shouldShowDate) {
+    const dateSize = templateConfig.dateFontSize;
+    const dateColor = hexToRgb(templateConfig.dateColor);
+    const datePrefix = templateConfig.datePrefix || "Issued:";
+    const dateText = `${datePrefix} ${issueDate}`;
+    const dateWidth = regularFont.widthOfTextAtSize(dateText, dateSize);
+    const dateCenterX = (width / 2) + (templateConfig.dateX || 0);
+    const finalDateX = Math.max(margin, dateCenterX - (dateWidth / 2));
+    const staticColor = templateConfig.isDarkModeTemplate ? rgb(0.9, 0.9, 0.9) : rgb(0.4, 0.4, 0.4);
+
+    page.drawText(dateText, {
+      x: finalDateX,
+      y: finalDateY,
+      font: regularFont,
+      size: dateSize,
+      color: templateConfig.isDarkModeTemplate ? staticColor : rgb(dateColor.r, dateColor.g, dateColor.b),
+    });
+  }
 
   // Certificate ID
   const codeText = `Certificate ID: ${certificateCode}`;
@@ -436,7 +464,8 @@ export async function renderCertificate(
 
   // Dual Signatures & Center Seal
   const showSignatures =
-    templateConfig.showSignatures ?? (templateConfig.templateId === "prestige-geometric");
+    templateConfig.showSignatures ??
+    (templateConfig.templateId === "prestige-geometric" && !templateConfig.customBackgroundData);
 
   if (showSignatures) {
     const leftSigText = templateConfig.leftSignatureTitle || "Authorized Signature";

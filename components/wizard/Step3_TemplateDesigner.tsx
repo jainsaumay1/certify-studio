@@ -10,14 +10,17 @@ export interface TemplateConfig {
   nameFontSize: number;
   nameFontFamily: string;
   nameColor: string;
-  nameY: number;
+  nameX?: number; // Horizontal offset in px (-300 to +300)
+  nameY: number;  // Vertical offset in px
   courseFontSize: number;
   courseFontFamily: string;
   courseColor: string;
+  courseX?: number;
   courseY: number;
   dateFontSize: number;
   dateFontFamily: string;
   dateColor: string;
+  dateX?: number;
   dateY: number;
   qrX: number;
   qrY: number;
@@ -30,6 +33,15 @@ export interface TemplateConfig {
   isDarkModeTemplate?: boolean;
   isCleanMode?: boolean; // Hides built-in static text
   coverOldText?: boolean; // Draws white boxes behind dynamic text
+  whiteoutWidth?: number; // Width of whiteout box
+  whiteoutHeight?: number; // Height of whiteout box
+
+  // Element Visibility Toggles
+  showTitle?: boolean;
+  showSubtitle?: boolean;
+  showBodyPhrase?: boolean;
+  showCourse?: boolean;
+  showDate?: boolean;
 
   // Customizable Phrases & Text
   customTitle?: string;
@@ -43,6 +55,7 @@ export interface TemplateConfig {
   // Customizable Sizes & Typography
   titleFontSize?: number;
   titleColor?: string;
+  titleX?: number;
   titleY?: number;
   subtitleFontSize?: number;
   subtitleColor?: string;
@@ -146,7 +159,21 @@ export default function Step3_TemplateDesigner() {
           {TEMPLATES.map((tmpl) => (
             <button
               key={tmpl.id}
-              onClick={() => update({ templateId: tmpl.id })}
+              onClick={() => {
+                if (tmpl.id === "custom") {
+                  update({
+                    templateId: tmpl.id,
+                    isCleanMode: true,
+                    showTitle: false,
+                    showSubtitle: false,
+                    showBodyPhrase: false,
+                    showSignatures: false,
+                  });
+                  setActiveTab("assets");
+                } else {
+                  update({ templateId: tmpl.id });
+                }
+              }}
               className={`text-left p-4 rounded-xl border-2 transition-all hover:shadow-md ${
                 templateConfig.templateId === tmpl.id
                   ? "border-blue-500 ring-2 ring-blue-200"
@@ -158,7 +185,9 @@ export default function Step3_TemplateDesigner() {
                 style={{ borderColor: tmpl.accent }}
               >
                 <div className="text-center px-2">
-                  <div className="text-xs font-bold" style={{ color: tmpl.accent }}>Certificate of Completion</div>
+                  <div className="text-xs font-bold" style={{ color: tmpl.accent }}>
+                    {tmpl.id === "custom" ? "Custom Design" : "Certificate of Completion"}
+                  </div>
                   <div className="text-xs mt-1 text-gray-500">Recipient Name</div>
                 </div>
               </div>
@@ -226,6 +255,83 @@ export default function Step3_TemplateDesigner() {
               >
                 🤝 Workshop Participation
               </button>
+            </div>
+          </div>
+
+          {/* Custom Template Notice */}
+          {(templateConfig.customBackgroundData || templateConfig.templateId === "custom") && (
+            <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-xl space-y-1.5 text-xs text-emerald-800">
+              <div className="font-bold flex items-center gap-1.5 text-sm text-emerald-900">
+                ✨ Custom Template Active
+              </div>
+              <p>
+                Built-in titles and phrases are hidden by default so they won&apos;t overwrite the design on your uploaded background image.
+                Use the toggles below if you want to turn on any specific text elements.
+              </p>
+            </div>
+          )}
+
+          {/* Visibility Controls */}
+          <div className="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="font-semibold text-gray-800 text-sm">Text Elements Included on Certificate</span>
+              <span className="text-xs text-gray-500">Check what to print</span>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
+              <label className="flex items-center gap-2 p-2 rounded-lg border bg-white cursor-pointer hover:border-blue-300">
+                <input
+                  type="checkbox"
+                  checked={templateConfig.showTitle ?? (!templateConfig.customBackgroundData && templateConfig.templateId !== "custom")}
+                  onChange={(e) => update({ showTitle: e.target.checked, isCleanMode: false })}
+                  className="rounded text-blue-600"
+                />
+                <span className="font-medium text-gray-700">Certificate Title</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 rounded-lg border bg-white cursor-pointer hover:border-blue-300">
+                <input
+                  type="checkbox"
+                  checked={templateConfig.showSubtitle ?? (!templateConfig.customBackgroundData && templateConfig.templateId !== "custom")}
+                  onChange={(e) => update({ showSubtitle: e.target.checked, isCleanMode: false })}
+                  className="rounded text-blue-600"
+                />
+                <span className="font-medium text-gray-700">Subtitle / Presenter Line</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 rounded-lg border bg-white cursor-pointer hover:border-blue-300">
+                <input
+                  type="checkbox"
+                  checked={templateConfig.showBodyPhrase ?? (!templateConfig.customBackgroundData && templateConfig.templateId !== "custom")}
+                  onChange={(e) => update({ showBodyPhrase: e.target.checked, isCleanMode: false })}
+                  className="rounded text-blue-600"
+                />
+                <span className="font-medium text-gray-700">Completion Body Phrase</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 rounded-lg border bg-white cursor-pointer hover:border-blue-300">
+                <input
+                  type="checkbox"
+                  checked={templateConfig.showCourse ?? true}
+                  onChange={(e) => update({ showCourse: e.target.checked })}
+                  className="rounded text-blue-600"
+                />
+                <span className="font-medium text-gray-700">Course / Event Name</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 rounded-lg border bg-white cursor-pointer hover:border-blue-300">
+                <input
+                  type="checkbox"
+                  checked={templateConfig.showDate ?? true}
+                  onChange={(e) => update({ showDate: e.target.checked })}
+                  className="rounded text-blue-600"
+                />
+                <span className="font-medium text-gray-700">Issue Date</span>
+              </label>
+              <label className="flex items-center gap-2 p-2 rounded-lg border bg-white cursor-pointer hover:border-blue-300">
+                <input
+                  type="checkbox"
+                  checked={templateConfig.showSignatures ?? (templateConfig.templateId === "prestige-geometric" && !templateConfig.customBackgroundData)}
+                  onChange={(e) => update({ showSignatures: e.target.checked })}
+                  className="rounded text-blue-600"
+                />
+                <span className="font-medium text-gray-700">Signatures Line</span>
+              </label>
             </div>
           </div>
 
@@ -467,13 +573,23 @@ export default function Step3_TemplateDesigner() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Vertical Offset (px)</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Vertical Offset Y (px)</label>
                 <input
                   type="number"
                   value={templateConfig.nameY || 0}
                   onChange={(e) => update({ nameY: Number(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   placeholder="0 = default, 50 = down, -50 = up"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Horizontal Offset X (px)</label>
+                <input
+                  type="number"
+                  value={templateConfig.nameX || 0}
+                  onChange={(e) => update({ nameX: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="0 = center, 80 = right, -80 = left"
                 />
               </div>
             </div>
@@ -577,13 +693,23 @@ export default function Step3_TemplateDesigner() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Vertical Offset (px)</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Vertical Offset Y (px)</label>
                 <input
                   type="number"
                   value={templateConfig.courseY || 0}
                   onChange={(e) => update({ courseY: Number(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   placeholder="0 = default, 50 = down, -50 = up"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Horizontal Offset X (px)</label>
+                <input
+                  type="number"
+                  value={templateConfig.courseX || 0}
+                  onChange={(e) => update({ courseX: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="0 = center, 80 = right, -80 = left"
                 />
               </div>
             </div>
@@ -624,13 +750,23 @@ export default function Step3_TemplateDesigner() {
                 </div>
               </div>
               <div>
-                <label className="text-xs font-medium text-gray-600 mb-1 block">Vertical Offset (px)</label>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Vertical Offset Y (px)</label>
                 <input
                   type="number"
                   value={templateConfig.dateY || 0}
                   onChange={(e) => update({ dateY: Number(e.target.value) })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
                   placeholder="0 = default, 50 = down, -50 = up"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-600 mb-1 block">Horizontal Offset X (px)</label>
+                <input
+                  type="number"
+                  value={templateConfig.dateX || 0}
+                  onChange={(e) => update({ dateX: Number(e.target.value) })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="0 = center, 80 = right, -80 = left"
                 />
               </div>
             </div>
@@ -679,7 +815,15 @@ export default function Step3_TemplateDesigner() {
                 if (file) {
                   const reader = new FileReader();
                   reader.onload = (ev) => {
-                    update({ customBackgroundData: ev.target?.result as string });
+                    update({
+                      customBackgroundData: ev.target?.result as string,
+                      templateId: "custom",
+                      isCleanMode: true,
+                      showTitle: false,
+                      showSubtitle: false,
+                      showBodyPhrase: false,
+                      showSignatures: false,
+                    });
                   };
                   reader.readAsDataURL(file);
                 }
@@ -688,8 +832,20 @@ export default function Step3_TemplateDesigner() {
             />
             {templateConfig.customBackgroundData && (
               <div className="mt-3 flex items-center gap-3">
-                <img src={templateConfig.customBackgroundData} alt="Custom Background" className="h-16 w-auto border rounded" />
-                <Button variant="ghost" size="sm" onClick={() => update({ customBackgroundData: undefined })}>Remove</Button>
+                <img src={templateConfig.customBackgroundData} alt="Custom Background" className="h-16 w-auto border rounded shadow-xs" />
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => update({
+                    customBackgroundData: undefined,
+                    showTitle: true,
+                    showSubtitle: true,
+                    showBodyPhrase: true,
+                    isCleanMode: false,
+                  })}
+                >
+                  Remove
+                </Button>
               </div>
             )}
           </div>
@@ -764,20 +920,57 @@ export default function Step3_TemplateDesigner() {
           <hr className="border-gray-200" />
 
           {/* Eraser / Whiteout Toggle */}
-          <div className="flex items-center justify-between">
-            <div>
-              <span className="font-semibold text-gray-800 text-sm block">Whiteout Old Text</span>
-              <span className="text-xs text-gray-500">Draws solid white rectangles behind the Name and Course text to erase pre-existing text on your template image.</span>
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="font-semibold text-gray-800 text-sm block">Whiteout / Cover Placeholder Text</span>
+                <span className="text-xs text-gray-500">
+                  Draws a solid white box behind the recipient name to erase pre-existing text (like &quot;Name Surname&quot;) on your Canva template image.
+                </span>
+              </div>
+              <label className="relative inline-flex items-center cursor-pointer">
+                <input 
+                  type="checkbox" 
+                  className="sr-only peer" 
+                  checked={templateConfig.coverOldText || false}
+                  onChange={(e) => update({ coverOldText: e.target.checked })}
+                />
+                <div className="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-2 peer-focus:ring-blue-300 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
+              </label>
             </div>
-            <label className="relative inline-flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="sr-only peer" 
-                checked={templateConfig.coverOldText || false}
-                onChange={(e) => update({ coverOldText: e.target.checked })}
-              />
-              <div className="w-9 h-5 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-2 peer-focus:ring-blue-300 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-4"></div>
-            </label>
+
+            {templateConfig.coverOldText && (
+              <div className="grid grid-cols-2 gap-4 p-3 bg-white rounded-lg border border-gray-200">
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">
+                    Whiteout Box Width (px)
+                  </label>
+                  <input
+                    type="number"
+                    value={templateConfig.whiteoutWidth || 380}
+                    onChange={(e) => update({ whiteoutWidth: Number(e.target.value) })}
+                    min={150}
+                    max={700}
+                    step={10}
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-gray-600 mb-1 block">
+                    Whiteout Box Height (px)
+                  </label>
+                  <input
+                    type="number"
+                    value={templateConfig.whiteoutHeight || 46}
+                    onChange={(e) => update({ whiteoutHeight: Number(e.target.value) })}
+                    min={20}
+                    max={120}
+                    step={2}
+                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
