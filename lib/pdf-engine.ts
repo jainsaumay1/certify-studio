@@ -182,6 +182,8 @@ export async function renderCertificate(
     }
   }
 
+  const isCustomBg = Boolean(templateConfig.customBackgroundData || templateConfig.templateId === "custom");
+
   // Custom Logo
   if (templateConfig.customLogoData) {
     try {
@@ -194,26 +196,26 @@ export async function renderCertificate(
         logoImage = await pdfDoc.embedJpg(bytes);
       }
       const logoDims = logoImage.scale(1.0);
-      const isCustom = Boolean(templateConfig.customBackgroundData || templateConfig.templateId === "custom");
       
       const targetHeight = templateConfig.logoHeight || 75;
       const targetWidth = templateConfig.logoWidth || (logoDims.width / logoDims.height) * targetHeight;
       
-      const logoCenterX = (width / 2) + (templateConfig.logoX || (isCustom ? 125 : 0));
-      const logoCenterY = isCustom
+      const logoCenterX = (width / 2) + (templateConfig.logoX || (isCustomBg ? 125 : 0));
+      const logoCenterY = isCustomBg
         ? (height / 2) - (templateConfig.logoY || -75)
         : height - 80 - (templateConfig.logoY || 0);
 
       // Eraser box for previous/background logo if present
-      if (templateConfig.coverOldLogo ?? isCustom) {
+      if (templateConfig.coverOldLogo ?? isCustomBg) {
         const coverW = templateConfig.oldLogoCoverWidth || (targetWidth + 20);
         const coverH = templateConfig.oldLogoCoverHeight || (targetHeight + 20);
+        const logoBoxCol = templateConfig.whiteoutColor ? hexToRgb(templateConfig.whiteoutColor) : { r: 1, g: 1, b: 1 };
         page.drawRectangle({
           x: logoCenterX - coverW / 2,
           y: logoCenterY - coverH / 2,
           width: coverW,
           height: coverH,
-          color: rgb(1, 1, 1),
+          color: rgb(logoBoxCol.r, logoBoxCol.g, logoBoxCol.b),
         });
       }
 
@@ -258,7 +260,37 @@ export async function renderCertificate(
     const titleOffsetY = templateConfig.titleY || 0;
     const titleOffsetX = templateConfig.titleX || 0;
 
-    if (templateConfig.templateId === "prestige-geometric" && !templateConfig.customTitle) {
+    if (isCustomBg) {
+      const titleText = templateConfig.customTitle || "Certificate of Appreciation";
+      const titleSize = templateConfig.titleFontSize || 26;
+      const titleWidth = boldFont.widthOfTextAtSize(titleText, titleSize);
+      const titleCenterX = (width / 2) + titleOffsetX;
+      const titleCenterY = (height / 2) - (templateConfig.titleY ?? -140);
+      page.drawText(titleText, {
+        x: titleCenterX - (titleWidth / 2),
+        y: titleCenterY - (titleSize * 0.35),
+        font: boldFont,
+        size: titleSize,
+        color: rgb(customTitleColor.r, customTitleColor.g, customTitleColor.b),
+      });
+
+      const shouldShowSub = !templateConfig.isCleanMode && (templateConfig.showSubtitle ?? false);
+      if (shouldShowSub) {
+        const subText = templateConfig.customSubtitle || "This certificate is awarded to";
+        const subSize = templateConfig.subtitleFontSize || 13;
+        const subWidth = italicFont.widthOfTextAtSize(subText, subSize);
+        const subCustomCol = templateConfig.subtitleColor ? hexToRgb(templateConfig.subtitleColor) : null;
+        const subCenterX = (width / 2) + (templateConfig.subtitleX ?? titleOffsetX);
+        const subCenterY = (height / 2) - (templateConfig.subtitleY ?? ((templateConfig.titleY ?? -140) + 32));
+        page.drawText(subText, {
+          x: subCenterX - (subWidth / 2),
+          y: subCenterY - (subSize * 0.35),
+          font: italicFont,
+          size: subSize,
+          color: subCustomCol ? rgb(subCustomCol.r, subCustomCol.g, subCustomCol.b) : rgb(0.35, 0.42, 0.5),
+        });
+      }
+    } else if (templateConfig.templateId === "prestige-geometric" && !templateConfig.customTitle) {
       const certText = "C E R T I F I C A T E";
       const certSize = templateConfig.titleFontSize || 26;
       const certWidth = boldFont.widthOfTextAtSize(certText, certSize);
@@ -366,7 +398,6 @@ export async function renderCertificate(
   const nameColor = hexToRgb(templateConfig.nameColor);
   const nameWidth = boldFont.widthOfTextAtSize(displayName, nameFontSize);
   
-  const isCustomBg = Boolean(templateConfig.customBackgroundData || templateConfig.templateId === "custom");
   const nameCenterX = (width / 2) + (templateConfig.nameX ?? (isCustomBg ? 125 : 0));
   
   let finalNameY: number;
@@ -386,12 +417,13 @@ export async function renderCertificate(
   if (templateConfig.coverOldText ?? isCustomBg) {
     const woWidth = templateConfig.whiteoutWidth || Math.max(520, nameWidth + 60);
     const woHeight = templateConfig.whiteoutHeight || (nameFontSize + 24);
+    const nameBoxCol = templateConfig.whiteoutColor ? hexToRgb(templateConfig.whiteoutColor) : { r: 1, g: 1, b: 1 };
     page.drawRectangle({
       x: Math.max(0, nameCenterX - (woWidth / 2)),
       y: woCenterY - (woHeight / 2),
       width: woWidth,
       height: woHeight,
-      color: rgb(1, 1, 1),
+      color: rgb(nameBoxCol.r, nameBoxCol.g, nameBoxCol.b),
     });
   }
 

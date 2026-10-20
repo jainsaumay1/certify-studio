@@ -1,18 +1,34 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { ChevronLeft, ChevronRight, AlertTriangle, Sliders, Eraser, MoveHorizontal, MoveVertical, Sparkles, Check, Move } from "lucide-react";
+import { 
+  ChevronLeft, 
+  ChevronRight, 
+  AlertTriangle, 
+  Sliders, 
+  Eraser, 
+  MoveHorizontal, 
+  MoveVertical, 
+  Sparkles, 
+  Type, 
+  Calendar, 
+  GraduationCap, 
+  Image as ImageIcon 
+} from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { useStore } from "@/lib/store";
+
+type DraggableTarget = "name" | "logo" | "title" | "subtitle" | "course" | "date";
 
 export default function Step4_Preview() {
   const { mappedRows, templateConfig, setTemplateConfig, setStep } = useStore();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showTuner, setShowTuner] = useState(false);
+  const [activeTunerTab, setActiveTunerTab] = useState<"name" | "title" | "course" | "date" | "logo">("name");
 
   // Dragging state for direct canvas interactive manipulation
-  const [dragTarget, setDragTarget] = useState<"name" | "logo" | null>(null);
+  const [dragTarget, setDragTarget] = useState<DraggableTarget | null>(null);
   const dragStartRef = useRef<{ clientX: number; clientY: number; startX: number; startY: number } | null>(null);
 
   const longestNameIndex = useMemo(() => {
@@ -77,17 +93,43 @@ export default function Step4_Preview() {
     setTemplateConfig({ ...templateConfig, ...patch });
   };
 
-  // Drag handlers
-  const handleMouseDown = (e: React.MouseEvent, target: "name" | "logo") => {
+  // Drag handlers for all fields
+  const handleMouseDown = (e: React.MouseEvent, target: DraggableTarget) => {
     e.preventDefault();
     e.stopPropagation();
     setDragTarget(target);
-    const startX = target === "name" 
-      ? (templateConfig.nameX ?? (isCustomBg ? 125 : 0)) 
-      : (templateConfig.logoX ?? (isCustomBg ? 125 : 0));
-    const startY = target === "name" 
-      ? (templateConfig.nameY ?? (isCustomBg ? 52 : 0)) 
-      : (templateConfig.logoY ?? (isCustomBg ? -75 : 0));
+    setActiveTunerTab(
+      target === "title" || target === "subtitle" ? "title" : target as "name" | "course" | "date" | "logo"
+    );
+
+    let startX = 0;
+    let startY = 0;
+    switch (target) {
+      case "name":
+        startX = templateConfig.nameX ?? (isCustomBg ? 125 : 0);
+        startY = templateConfig.nameY ?? (isCustomBg ? 52 : 0);
+        break;
+      case "logo":
+        startX = templateConfig.logoX ?? (isCustomBg ? 125 : 0);
+        startY = templateConfig.logoY ?? (isCustomBg ? -75 : 0);
+        break;
+      case "title":
+        startX = templateConfig.titleX ?? (isCustomBg ? 125 : 0);
+        startY = templateConfig.titleY ?? (isCustomBg ? -140 : 0);
+        break;
+      case "subtitle":
+        startX = templateConfig.subtitleX ?? (templateConfig.titleX ?? (isCustomBg ? 125 : 0));
+        startY = templateConfig.subtitleY ?? ((templateConfig.titleY ?? (isCustomBg ? -140 : 0)) + 30);
+        break;
+      case "course":
+        startX = templateConfig.courseX ?? (templateConfig.nameX ?? (isCustomBg ? 125 : 0));
+        startY = templateConfig.courseY ?? ((templateConfig.nameY ?? (isCustomBg ? 52 : 0)) + 45);
+        break;
+      case "date":
+        startX = templateConfig.dateX ?? (isCustomBg ? 125 : 0);
+        startY = templateConfig.dateY ?? (isCustomBg ? 180 : 0);
+        break;
+    }
     dragStartRef.current = { clientX: e.clientX, clientY: e.clientY, startX, startY };
   };
 
@@ -95,17 +137,28 @@ export default function Step4_Preview() {
     if (!dragTarget || !dragStartRef.current) return;
     const dx = e.clientX - dragStartRef.current.clientX;
     const dy = e.clientY - dragStartRef.current.clientY;
+    const newX = Math.round(dragStartRef.current.startX + dx);
+    const newY = Math.round(dragStartRef.current.startY + dy);
 
-    if (dragTarget === "name") {
-      updateConfig({
-        nameX: Math.round(dragStartRef.current.startX + dx),
-        nameY: Math.round(dragStartRef.current.startY + dy),
-      });
-    } else if (dragTarget === "logo") {
-      updateConfig({
-        logoX: Math.round(dragStartRef.current.startX + dx),
-        logoY: Math.round(dragStartRef.current.startY + dy),
-      });
+    switch (dragTarget) {
+      case "name":
+        updateConfig({ nameX: newX, nameY: newY });
+        break;
+      case "logo":
+        updateConfig({ logoX: newX, logoY: newY });
+        break;
+      case "title":
+        updateConfig({ titleX: newX, titleY: newY });
+        break;
+      case "subtitle":
+        updateConfig({ subtitleX: newX, subtitleY: newY });
+        break;
+      case "course":
+        updateConfig({ courseX: newX, courseY: newY });
+        break;
+      case "date":
+        updateConfig({ dateX: newX, dateY: newY });
+        break;
     }
   };
 
@@ -121,6 +174,7 @@ export default function Step4_Preview() {
       nameY: 52,
       whiteoutWidth: 520,
       whiteoutHeight: 60,
+      whiteoutColor: "#ffffff",
       coverOldText: true,
       logoX: 125,
       logoY: -75,
@@ -148,6 +202,7 @@ export default function Step4_Preview() {
       nameY: 0,
       whiteoutWidth: 460,
       whiteoutHeight: 56,
+      whiteoutColor: "#ffffff",
       coverOldText: true,
       logoX: 0,
       logoY: -110,
@@ -174,7 +229,7 @@ export default function Step4_Preview() {
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Step 4 — Live Preview</h2>
           <p className="mt-1 text-gray-500">
-            Review your dynamic certificates. Drag elements on the certificate to position them, or use the controls below.
+            Review your dynamic certificates. Grab and drag ANY field (Name, Logo, Title, Date, Course) directly on the canvas!
           </p>
         </div>
         <div className="flex gap-2">
@@ -185,7 +240,7 @@ export default function Step4_Preview() {
             className="gap-1.5 shrink-0 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100"
           >
             <Sliders size={14} />
-            {showTuner ? "Hide Position Tuner" : "Tune Text & Logo"}
+            {showTuner ? "Hide Alignment Tuner" : "Arrange Fields & Colors"}
           </Button>
           <Button
             variant="outline"
@@ -206,7 +261,7 @@ export default function Step4_Preview() {
             <Sparkles size={16} className="text-blue-600 shrink-0" />
             <div>
               <span className="font-semibold text-blue-900 block">Custom Template Alignment Presets</span>
-              <span className="text-blue-700 text-[11px]">Automatically erase placeholder background text & align logo cleanly</span>
+              <span className="text-blue-700 text-[11px]">Quick 1-click positioning to match Canva or Centered layouts</span>
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -232,229 +287,626 @@ export default function Step4_Preview() {
         </div>
       )}
 
-      {/* Live Position & Alignment Tuner Toolbar (collapsible or persistent for custom templates) */}
+      {/* Comprehensive Field Arranger & Color Tuner Toolbar */}
       {(showTuner || isCustomBg) && (
-        <div className="p-4 bg-blue-50/70 border border-blue-200 rounded-xl space-y-3 text-xs text-gray-700">
-          <div className="flex items-center justify-between font-semibold text-blue-900">
-            <span className="flex items-center gap-1.5">
-              <Sliders size={15} />
-              Live Name, Logo & Eraser Positioning Controls
-            </span>
-            <span className="text-[11px] font-normal text-blue-700">💡 Tip: You can also drag the name and logo directly on the canvas!</span>
+        <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl space-y-3.5 text-xs text-gray-700 shadow-xs">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-blue-200/60 pb-2.5">
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-blue-950 flex items-center gap-1.5 text-sm">
+                <Sliders size={16} className="text-blue-600" />
+                Arrange Fields & Styling
+              </span>
+              <span className="text-[11px] text-blue-700 hidden sm:inline">
+                (Click any tab or drag elements directly on the certificate)
+              </span>
+            </div>
+
+            {/* Field Tabs */}
+            <div className="flex flex-wrap gap-1 bg-white p-1 rounded-lg border border-blue-200">
+              <button
+                type="button"
+                onClick={() => setActiveTunerTab("name")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  activeTunerTab === "name" ? "bg-blue-600 text-white shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <Type size={13} />
+                Name & Underneath Box
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTunerTab("logo")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  activeTunerTab === "logo" ? "bg-blue-600 text-white shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <ImageIcon size={13} />
+                Logo
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTunerTab("title")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  activeTunerTab === "title" ? "bg-blue-600 text-white shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <Sparkles size={13} />
+                Title & Subtitle
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTunerTab("course")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  activeTunerTab === "course" ? "bg-blue-600 text-white shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <GraduationCap size={13} />
+                Course
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTunerTab("date")}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-medium transition-colors ${
+                  activeTunerTab === "date" ? "bg-blue-600 text-white shadow-2xs" : "text-gray-600 hover:text-gray-900"
+                }`}
+              >
+                <Calendar size={13} />
+                Date
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 pt-1">
-            {/* Recipient Name Shift X & Y */}
-            <div className="bg-white p-2.5 rounded-lg border border-blue-100 space-y-2">
-              <div className="flex items-center justify-between font-medium">
-                <span className="flex items-center gap-1">
-                  <MoveHorizontal size={13} className="text-blue-600" />
-                  Name Shift X (Left/Right)
-                </span>
-                <span className="font-mono text-blue-700">{templateConfig.nameX ?? (isCustomBg ? 125 : 0)}px</span>
-              </div>
-              <input
-                type="range"
-                min={-300}
-                max={300}
-                step={5}
-                value={templateConfig.nameX ?? (isCustomBg ? 125 : 0)}
-                onChange={(e) => updateConfig({ nameX: Number(e.target.value) })}
-                className="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer"
-              />
-              <div className="flex items-center justify-between font-medium pt-1">
-                <span className="flex items-center gap-1">
-                  <MoveVertical size={13} className="text-blue-600" />
-                  Name Shift Y (Up/Down)
-                </span>
-                <span className="font-mono text-blue-700">{templateConfig.nameY ?? (isCustomBg ? 52 : 0)}px</span>
-              </div>
-              <input
-                type="range"
-                min={-200}
-                max={200}
-                step={5}
-                value={templateConfig.nameY ?? (isCustomBg ? 52 : 0)}
-                onChange={(e) => updateConfig({ nameY: Number(e.target.value) })}
-                className="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer"
-              />
-            </div>
-
-            {/* Recipient Name Whiteout / Eraser Box */}
-            <div className="bg-white p-2.5 rounded-lg border border-blue-100 space-y-2">
-              <div className="flex items-center justify-between font-medium">
-                <span className="flex items-center gap-1">
-                  <Eraser size={13} className="text-blue-600" />
-                  Erase &quot;Name Surname&quot;
-                </span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={templateConfig.coverOldText ?? isCustomBg}
-                    onChange={(e) => updateConfig({ coverOldText: e.target.checked })}
-                  />
-                  <div className="w-7 h-4 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
-                </label>
-              </div>
-              <p className="text-[10px] text-gray-500">
-                Paints a clean white box over the background placeholder text
-              </p>
-              {(templateConfig.coverOldText ?? isCustomBg) && (
-                <div className="space-y-1.5 pt-1">
-                  <div className="flex justify-between text-[10px] text-gray-500">
-                    <span>Eraser Width: {templateConfig.whiteoutWidth || 520}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={200}
-                    max={700}
-                    step={10}
-                    value={templateConfig.whiteoutWidth || 520}
-                    onChange={(e) => updateConfig({ whiteoutWidth: Number(e.target.value) })}
-                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
-                  />
-                  <div className="flex justify-between text-[10px] text-gray-500">
-                    <span>Eraser Height: {templateConfig.whiteoutHeight || 60}px</span>
-                  </div>
-                  <input
-                    type="range"
-                    min={20}
-                    max={120}
-                    step={2}
-                    value={templateConfig.whiteoutHeight || 60}
-                    onChange={(e) => updateConfig({ whiteoutHeight: Number(e.target.value) })}
-                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
-                  />
+          {/* TAB 1: RECIPIENT NAME & UNDERNEATH BOX */}
+          {activeTunerTab === "name" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {/* Name Position Shift */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex items-center justify-between font-medium">
+                  <span className="flex items-center gap-1">
+                    <MoveHorizontal size={13} className="text-blue-600" />
+                    Name Shift X (Left/Right)
+                  </span>
+                  <span className="font-mono text-blue-700">{templateConfig.nameX ?? (isCustomBg ? 125 : 0)}px</span>
                 </div>
-              )}
-            </div>
+                <input
+                  type="range"
+                  min={-350}
+                  max={350}
+                  step={5}
+                  value={templateConfig.nameX ?? (isCustomBg ? 125 : 0)}
+                  onChange={(e) => updateConfig({ nameX: Number(e.target.value) })}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer"
+                />
 
-            {/* Logo Position & Eraser Box */}
-            <div className="bg-white p-2.5 rounded-lg border border-blue-100 space-y-2">
-              <div className="flex items-center justify-between font-medium">
-                <span className="flex items-center gap-1">
-                  <Eraser size={13} className="text-indigo-600" />
-                  Erase Old Logo Underneath
-                </span>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="sr-only peer"
-                    checked={templateConfig.coverOldLogo ?? isCustomBg}
-                    onChange={(e) => updateConfig({ coverOldLogo: e.target.checked })}
-                  />
-                  <div className="w-7 h-4 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
-                </label>
+                <div className="flex items-center justify-between font-medium pt-1">
+                  <span className="flex items-center gap-1">
+                    <MoveVertical size={13} className="text-blue-600" />
+                    Name Shift Y (Up/Down)
+                  </span>
+                  <span className="font-mono text-blue-700">{templateConfig.nameY ?? (isCustomBg ? 52 : 0)}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={-250}
+                  max={250}
+                  step={5}
+                  value={templateConfig.nameY ?? (isCustomBg ? 52 : 0)}
+                  onChange={(e) => updateConfig({ nameY: Number(e.target.value) })}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer"
+                />
               </div>
-              <div className="grid grid-cols-2 gap-2 pt-1 text-[11px]">
+
+              {/* Box Underneath Color & Eraser Toggle */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex items-center justify-between font-medium">
+                  <span className="flex items-center gap-1">
+                    <Eraser size={13} className="text-blue-600" />
+                    Box Underneath Name
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={templateConfig.coverOldText ?? isCustomBg}
+                      onChange={(e) => updateConfig({ coverOldText: e.target.checked })}
+                    />
+                    <div className="w-7 h-4 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
+                  </label>
+                </div>
+
                 <div>
-                  <span className="text-gray-500 block">Logo Shift X: {templateConfig.logoX ?? (isCustomBg ? 125 : 0)}px</span>
-                  <input
-                    type="range"
-                    min={-300}
-                    max={300}
-                    step={5}
-                    value={templateConfig.logoX ?? (isCustomBg ? 125 : 0)}
-                    onChange={(e) => updateConfig({ logoX: Number(e.target.value) })}
-                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
-                  />
-                </div>
-                <div>
-                  <span className="text-gray-500 block">Logo Shift Y: {templateConfig.logoY ?? (isCustomBg ? -75 : 0)}px</span>
-                  <input
-                    type="range"
-                    min={-200}
-                    max={200}
-                    step={5}
-                    value={templateConfig.logoY ?? (isCustomBg ? -75 : 0)}
-                    onChange={(e) => updateConfig({ logoY: Number(e.target.value) })}
-                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
-                  />
+                  <label className="text-[11px] font-medium text-gray-700 block mb-1">
+                    Box Underneath Color (Eraser)
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="color"
+                      value={templateConfig.whiteoutColor || "#ffffff"}
+                      onChange={(e) => updateConfig({ whiteoutColor: e.target.value })}
+                      className="w-8 h-8 border border-gray-300 rounded cursor-pointer shrink-0"
+                    />
+                    <input
+                      type="text"
+                      value={templateConfig.whiteoutColor || "#ffffff"}
+                      onChange={(e) => updateConfig({ whiteoutColor: e.target.value })}
+                      placeholder="#ffffff"
+                      className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono"
+                    />
+                  </div>
+                  {/* Quick Swatches */}
+                  <div className="flex items-center gap-1 mt-1.5">
+                    {[
+                      { name: "White", val: "#ffffff" },
+                      { name: "Cream", val: "#fef9ee" },
+                      { name: "Off-White", val: "#fdfbf7" },
+                      { name: "Slate", val: "#f1f5f9" },
+                      { name: "Dark", val: "#0f172a" },
+                    ].map((swatch) => (
+                      <button
+                        key={swatch.val}
+                        type="button"
+                        onClick={() => updateConfig({ whiteoutColor: swatch.val })}
+                        title={swatch.name}
+                        className="w-5 h-5 rounded-full border border-gray-300 shadow-2xs hover:scale-110 transition-transform"
+                        style={{ backgroundColor: swatch.val }}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-2 text-[10px]">
-                <button
-                  type="button"
-                  onClick={() => updateConfig({ logoWidth: 80, logoHeight: 80, oldLogoCoverWidth: 95, oldLogoCoverHeight: 95 })}
-                  className="px-2 py-0.5 bg-gray-100 hover:bg-gray-200 rounded"
-                >
-                  Reset Logo Size (80px)
-                </button>
+
+              {/* Box Dimensions */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex justify-between font-medium">
+                  <span>Box Width</span>
+                  <span className="font-mono text-blue-700">{templateConfig.whiteoutWidth || 520}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={200}
+                  max={750}
+                  step={10}
+                  value={templateConfig.whiteoutWidth || 520}
+                  onChange={(e) => updateConfig({ whiteoutWidth: Number(e.target.value) })}
+                  className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                />
+
+                <div className="flex justify-between font-medium pt-1">
+                  <span>Box Height</span>
+                  <span className="font-mono text-blue-700">{templateConfig.whiteoutHeight || 60}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={20}
+                  max={120}
+                  step={2}
+                  value={templateConfig.whiteoutHeight || 60}
+                  onChange={(e) => updateConfig({ whiteoutHeight: Number(e.target.value) })}
+                  className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                />
+              </div>
+
+              {/* Name Typography & Color */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="font-medium text-gray-800">Name Text Color & Style</div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={templateConfig.nameColor || "#133e7c"}
+                    onChange={(e) => updateConfig({ nameColor: e.target.value })}
+                    className="w-8 h-8 border border-gray-300 rounded cursor-pointer shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={templateConfig.nameColor || "#133e7c"}
+                    onChange={(e) => updateConfig({ nameColor: e.target.value })}
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1 pt-1">
+                  {[
+                    { name: "Canva Navy", color: "#133e7c" },
+                    { name: "Midnight", color: "#0f2847" },
+                    { name: "Royal Blue", color: "#1e3a8a" },
+                    { name: "Black", color: "#111827" },
+                  ].map((item) => (
+                    <button
+                      key={item.color}
+                      type="button"
+                      onClick={() => updateConfig({ nameColor: item.color, nameFontFamily: "Helvetica-Bold" })}
+                      className="flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] hover:border-blue-400"
+                      style={{
+                        borderColor: templateConfig.nameColor === item.color ? item.color : "#e5e7eb",
+                        fontWeight: templateConfig.nameColor === item.color ? "bold" : "normal"
+                      }}
+                    >
+                      <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: item.color }} />
+                      {item.name}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+          )}
 
-            {/* Typography & Elements On/Off */}
-            <div className="bg-white p-2.5 rounded-lg border border-blue-100 space-y-2">
-              <div className="font-medium text-gray-800">Font & Style Match</div>
-              <div className="flex flex-wrap gap-1">
-                {[
-                  { name: "Canva Navy", color: "#133e7c" },
-                  { name: "Midnight", color: "#0f2847" },
-                  { name: "Royal Blue", color: "#1e3a8a" },
-                  { name: "Black", color: "#111827" },
-                ].map((item) => (
+          {/* TAB 2: LOGO */}
+          {activeTunerTab === "logo" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Logo Position */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex items-center justify-between font-medium">
+                  <span>Logo Shift X (Left/Right)</span>
+                  <span className="font-mono text-blue-700">{templateConfig.logoX ?? (isCustomBg ? 125 : 0)}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={-350}
+                  max={350}
+                  step={5}
+                  value={templateConfig.logoX ?? (isCustomBg ? 125 : 0)}
+                  onChange={(e) => updateConfig({ logoX: Number(e.target.value) })}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer"
+                />
+
+                <div className="flex items-center justify-between font-medium pt-1">
+                  <span>Logo Shift Y (Up/Down)</span>
+                  <span className="font-mono text-blue-700">{templateConfig.logoY ?? (isCustomBg ? -75 : 0)}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={-250}
+                  max={250}
+                  step={5}
+                  value={templateConfig.logoY ?? (isCustomBg ? -75 : 0)}
+                  onChange={(e) => updateConfig({ logoY: Number(e.target.value) })}
+                  className="w-full h-1.5 bg-gray-200 rounded-lg cursor-pointer"
+                />
+              </div>
+
+              {/* Logo Size */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex justify-between font-medium">
+                  <span>Logo Width</span>
+                  <span className="font-mono text-blue-700">{templateConfig.logoWidth || 80}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={30}
+                  max={200}
+                  step={5}
+                  value={templateConfig.logoWidth || 80}
+                  onChange={(e) => updateConfig({ logoWidth: Number(e.target.value) })}
+                  className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                />
+
+                <div className="flex justify-between font-medium pt-1">
+                  <span>Logo Height</span>
+                  <span className="font-mono text-blue-700">{templateConfig.logoHeight || 80}px</span>
+                </div>
+                <input
+                  type="range"
+                  min={30}
+                  max={200}
+                  step={5}
+                  value={templateConfig.logoHeight || 80}
+                  onChange={(e) => updateConfig({ logoHeight: Number(e.target.value) })}
+                  className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                />
+              </div>
+
+              {/* Logo Eraser */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex items-center justify-between font-medium">
+                  <span className="flex items-center gap-1">
+                    <Eraser size={13} className="text-indigo-600" />
+                    Erase Old Logo Underneath
+                  </span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      className="sr-only peer"
+                      checked={templateConfig.coverOldLogo ?? isCustomBg}
+                      onChange={(e) => updateConfig({ coverOldLogo: e.target.checked })}
+                    />
+                    <div className="w-7 h-4 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-3"></div>
+                  </label>
+                </div>
+                <p className="text-[10px] text-gray-500">
+                  Draws a whiteout box underneath your uploaded logo to cover any old badge or graphic.
+                </p>
+                <div className="flex gap-2 pt-1">
                   <button
-                    key={item.color}
                     type="button"
-                    onClick={() => updateConfig({ nameColor: item.color, nameFontFamily: "Helvetica-Bold" })}
-                    className="flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] hover:border-blue-400"
-                    style={{
-                      borderColor: templateConfig.nameColor === item.color ? item.color : "#e5e7eb",
-                      fontWeight: templateConfig.nameColor === item.color ? "bold" : "normal"
-                    }}
+                    onClick={() => updateConfig({ logoX: (isCustomBg ? 125 : 0), logoY: (isCustomBg ? -75 : -100) })}
+                    className="px-2.5 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs"
                   >
-                    <span className="w-2.5 h-2.5 rounded-full inline-block" style={{ backgroundColor: item.color }} />
-                    {item.name}
+                    Reset Position
                   </button>
-                ))}
-              </div>
-
-              <div className="font-medium text-gray-800 pt-1 border-t border-gray-100">Elements On/Off</div>
-              <div className="grid grid-cols-2 gap-1 text-[11px]">
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={shouldShowTitle}
-                    onChange={(e) => updateConfig({ showTitle: e.target.checked, isCleanMode: false })}
-                    className="rounded text-blue-600"
-                  />
-                  <span>Title</span>
-                </label>
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={shouldShowSubtitle}
-                    onChange={(e) => updateConfig({ showSubtitle: e.target.checked, isCleanMode: false })}
-                    className="rounded text-blue-600"
-                  />
-                  <span>Subtitle</span>
-                </label>
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={shouldShowCourse}
-                    onChange={(e) => updateConfig({ showCourse: e.target.checked })}
-                    className="rounded text-blue-600"
-                  />
-                  <span>Course</span>
-                </label>
-                <label className="flex items-center gap-1 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={shouldShowDate}
-                    onChange={(e) => updateConfig({ showDate: e.target.checked })}
-                    className="rounded text-blue-600"
-                  />
-                  <span>Date</span>
-                </label>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* TAB 3: TITLE & SUBTITLE */}
+          {activeTunerTab === "title" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Title Visibility & Position */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex items-center justify-between font-medium">
+                  <span>Title Element</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={shouldShowTitle}
+                      onChange={(e) => updateConfig({ showTitle: e.target.checked, isCleanMode: false })}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="ml-1.5 text-xs">Show</span>
+                  </label>
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex justify-between text-[11px]">
+                    <span>Title Shift X</span>
+                    <span className="font-mono text-blue-700">{templateConfig.titleX || 0}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-350}
+                    max={350}
+                    step={5}
+                    value={templateConfig.titleX || 0}
+                    onChange={(e) => updateConfig({ titleX: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[11px] pt-1">
+                    <span>Title Shift Y</span>
+                    <span className="font-mono text-blue-700">{templateConfig.titleY || (isCustomBg ? -140 : 0)}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-250}
+                    max={250}
+                    step={5}
+                    value={templateConfig.titleY || (isCustomBg ? -140 : 0)}
+                    onChange={(e) => updateConfig({ titleY: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Subtitle Visibility & Position */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex items-center justify-between font-medium">
+                  <span>Subtitle Element</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={shouldShowSubtitle}
+                      onChange={(e) => updateConfig({ showSubtitle: e.target.checked, isCleanMode: false })}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="ml-1.5 text-xs">Show</span>
+                  </label>
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex justify-between text-[11px]">
+                    <span>Subtitle Shift X</span>
+                    <span className="font-mono text-blue-700">{templateConfig.subtitleX ?? (templateConfig.titleX || (isCustomBg ? 125 : 0))}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-350}
+                    max={350}
+                    step={5}
+                    value={templateConfig.subtitleX ?? (templateConfig.titleX || (isCustomBg ? 125 : 0))}
+                    onChange={(e) => updateConfig({ subtitleX: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[11px] pt-1">
+                    <span>Subtitle Shift Y</span>
+                    <span className="font-mono text-blue-700">{templateConfig.subtitleY ?? ((templateConfig.titleY || (isCustomBg ? -140 : 0)) + 30)}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-250}
+                    max={250}
+                    step={5}
+                    value={templateConfig.subtitleY ?? ((templateConfig.titleY || (isCustomBg ? -140 : 0)) + 30)}
+                    onChange={(e) => updateConfig({ subtitleY: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Title & Subtitle Text & Color */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div>
+                  <label className="text-[11px] font-medium text-gray-700 block mb-0.5">Custom Title Text</label>
+                  <input
+                    type="text"
+                    value={templateConfig.customTitle || ""}
+                    placeholder="e.g. Certificate of Appreciation"
+                    onChange={(e) => updateConfig({ customTitle: e.target.value })}
+                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-medium text-gray-700 block mb-0.5">Custom Subtitle Text</label>
+                  <input
+                    type="text"
+                    value={templateConfig.customSubtitle || ""}
+                    placeholder="e.g. This certificate is awarded to"
+                    onChange={(e) => updateConfig({ customSubtitle: e.target.value })}
+                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: COURSE */}
+          {activeTunerTab === "course" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Course Position */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex items-center justify-between font-medium">
+                  <span>Course Element</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={shouldShowCourse}
+                      onChange={(e) => updateConfig({ showCourse: e.target.checked })}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="ml-1.5 text-xs">Show</span>
+                  </label>
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex justify-between text-[11px]">
+                    <span>Course Shift X</span>
+                    <span className="font-mono text-blue-700">{templateConfig.courseX ?? (templateConfig.nameX ?? (isCustomBg ? 125 : 0))}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-350}
+                    max={350}
+                    step={5}
+                    value={templateConfig.courseX ?? (templateConfig.nameX ?? (isCustomBg ? 125 : 0))}
+                    onChange={(e) => updateConfig({ courseX: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[11px] pt-1">
+                    <span>Course Shift Y</span>
+                    <span className="font-mono text-blue-700">{templateConfig.courseY ?? ((templateConfig.nameY ?? (isCustomBg ? 52 : 0)) + 45)}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-250}
+                    max={250}
+                    step={5}
+                    value={templateConfig.courseY ?? ((templateConfig.nameY ?? (isCustomBg ? 52 : 0)) + 45)}
+                    onChange={(e) => updateConfig({ courseY: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Course Styling */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="font-medium text-gray-800">Course Font Size & Color</div>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="color"
+                    value={templateConfig.courseColor || "#374151"}
+                    onChange={(e) => updateConfig({ courseColor: e.target.value })}
+                    className="w-8 h-8 border border-gray-300 rounded cursor-pointer shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={templateConfig.courseColor || "#374151"}
+                    onChange={(e) => updateConfig({ courseColor: e.target.value })}
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono"
+                  />
+                </div>
+                <div>
+                  <div className="flex justify-between text-[11px] mb-1">
+                    <span>Font Size</span>
+                    <span className="font-mono text-blue-700">{templateConfig.courseFontSize || 22}pt</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={12}
+                    max={40}
+                    step={1}
+                    value={templateConfig.courseFontSize || 22}
+                    onChange={(e) => updateConfig({ courseFontSize: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: DATE */}
+          {activeTunerTab === "date" && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {/* Date Position */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div className="flex items-center justify-between font-medium">
+                  <span>Issue Date Element</span>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={shouldShowDate}
+                      onChange={(e) => updateConfig({ showDate: e.target.checked })}
+                      className="rounded text-blue-600"
+                    />
+                    <span className="ml-1.5 text-xs">Show</span>
+                  </label>
+                </div>
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex justify-between text-[11px]">
+                    <span>Date Shift X</span>
+                    <span className="font-mono text-blue-700">{templateConfig.dateX ?? (isCustomBg ? 125 : 0)}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-350}
+                    max={350}
+                    step={5}
+                    value={templateConfig.dateX ?? (isCustomBg ? 125 : 0)}
+                    onChange={(e) => updateConfig({ dateX: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[11px] pt-1">
+                    <span>Date Shift Y</span>
+                    <span className="font-mono text-blue-700">{templateConfig.dateY ?? (isCustomBg ? 180 : 0)}px</span>
+                  </div>
+                  <input
+                    type="range"
+                    min={-250}
+                    max={250}
+                    step={5}
+                    value={templateConfig.dateY ?? (isCustomBg ? 180 : 0)}
+                    onChange={(e) => updateConfig({ dateY: Number(e.target.value) })}
+                    className="w-full h-1 bg-gray-200 rounded cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* Date Styling & Prefix */}
+              <div className="bg-white p-3 rounded-lg border border-blue-100 space-y-2">
+                <div>
+                  <label className="text-[11px] font-medium text-gray-700 block mb-0.5">Date Label / Prefix</label>
+                  <input
+                    type="text"
+                    value={templateConfig.datePrefix || ""}
+                    placeholder="e.g. Issued: or Date: (or leave blank)"
+                    onChange={(e) => updateConfig({ datePrefix: e.target.value })}
+                    className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-1">
+                  <input
+                    type="color"
+                    value={templateConfig.dateColor || "#6b7280"}
+                    onChange={(e) => updateConfig({ dateColor: e.target.value })}
+                    className="w-8 h-8 border border-gray-300 rounded cursor-pointer shrink-0"
+                  />
+                  <input
+                    type="text"
+                    value={templateConfig.dateColor || "#6b7280"}
+                    onChange={(e) => updateConfig({ dateColor: e.target.value })}
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded text-xs font-mono"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {/* Certificate Preview Card with Drag Support */}
+      {/* Certificate Preview Card with Drag Support for ALL Fields */}
       <div
         className="relative w-full rounded-xl overflow-hidden shadow-lg select-none"
         style={{ 
@@ -514,7 +966,7 @@ export default function Step4_Preview() {
                 {/* Logo Eraser Box */}
                 {(templateConfig.coverOldLogo ?? true) && (
                   <div
-                    className="absolute bg-white rounded pointer-events-none shadow-xs border border-blue-200/40"
+                    className="absolute rounded pointer-events-none shadow-xs border border-blue-200/40"
                     style={{
                       width: `${templateConfig.oldLogoCoverWidth || 95}px`,
                       height: `${templateConfig.oldLogoCoverHeight || 95}px`,
@@ -538,7 +990,59 @@ export default function Step4_Preview() {
               </div>
             )}
 
-            {/* Recipient Name (Draggable + Eraser Box) */}
+            {/* Title (Draggable if enabled) */}
+            {shouldShowTitle && (
+              <div
+                className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
+                style={{
+                  left: `calc(50% + ${templateConfig.titleX ?? 125}px)`,
+                  top: `calc(50% + ${templateConfig.titleY ?? -140}px)`,
+                  transform: "translate(-50%, -50%)",
+                }}
+                onMouseDown={(e) => handleMouseDown(e, "title")}
+              >
+                <div
+                  className="font-bold tracking-wider select-none text-center"
+                  style={{
+                    fontSize: `${(templateConfig.titleFontSize || 26) * 0.8}px`,
+                    color: templateConfig.titleColor || style.accent,
+                  }}
+                >
+                  {templateConfig.customTitle || "Certificate of Appreciation"}
+                </div>
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-900/80 text-white text-[10px] px-2 py-0.5 rounded pointer-events-none whitespace-nowrap shadow-sm">
+                  ✥ Drag Title
+                </div>
+              </div>
+            )}
+
+            {/* Subtitle (Draggable if enabled) */}
+            {shouldShowSubtitle && (
+              <div
+                className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
+                style={{
+                  left: `calc(50% + ${templateConfig.subtitleX ?? (templateConfig.titleX ?? 125)}px)`,
+                  top: `calc(50% + ${templateConfig.subtitleY ?? ((templateConfig.titleY ?? -140) + 30)}px)`,
+                  transform: "translate(-50%, -50%)",
+                }}
+                onMouseDown={(e) => handleMouseDown(e, "subtitle")}
+              >
+                <div
+                  className="italic select-none text-center"
+                  style={{
+                    fontSize: `${(templateConfig.subtitleFontSize || 13) * 0.8}px`,
+                    color: templateConfig.subtitleColor || (templateConfig.isDarkModeTemplate ? "#e5e7eb" : "#64748b"),
+                  }}
+                >
+                  {templateConfig.customSubtitle || "This certificate is awarded to"}
+                </div>
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-900/80 text-white text-[10px] px-2 py-0.5 rounded pointer-events-none whitespace-nowrap shadow-sm">
+                  ✥ Drag Subtitle
+                </div>
+              </div>
+            )}
+
+            {/* Recipient Name (Draggable + Eraser Box with Custom Color) */}
             <div
               className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
               style={{
@@ -548,10 +1052,10 @@ export default function Step4_Preview() {
               }}
               onMouseDown={(e) => handleMouseDown(e, "name")}
             >
-              {/* Recipient Name Whiteout Box (Eraser) */}
+              {/* Recipient Name Whiteout Box (Eraser with Custom Color) */}
               {(templateConfig.coverOldText ?? true) && (
                 <div
-                  className="absolute bg-white rounded pointer-events-none shadow-xs border border-blue-200/40"
+                  className="absolute rounded pointer-events-none shadow-xs border border-blue-200/40"
                   style={{
                     width: `${templateConfig.whiteoutWidth || 520}px`,
                     height: `${templateConfig.whiteoutHeight || 60}px`,
@@ -576,33 +1080,55 @@ export default function Step4_Preview() {
               </div>
             </div>
 
-            {/* Course Name (if enabled) */}
+            {/* Course Name (Draggable if enabled) */}
             {shouldShowCourse && (
               <div
-                className="absolute font-semibold text-sm leading-snug max-w-md my-0.5 text-center z-10"
+                className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
                 style={{
                   left: `calc(50% + ${templateConfig.courseX ?? (templateConfig.nameX ?? 125)}px)`,
                   top: `calc(50% + ${templateConfig.courseY ?? ((templateConfig.nameY ?? 52) + 45)}px)`,
                   transform: "translate(-50%, -50%)",
-                  color: templateConfig.courseColor || "#374151",
                 }}
+                onMouseDown={(e) => handleMouseDown(e, "course")}
               >
-                {row.course || "(no course)"}
+                <div
+                  className="font-semibold text-sm leading-snug max-w-md text-center select-none"
+                  style={{
+                    color: templateConfig.courseColor || "#374151",
+                    fontSize: `${(templateConfig.courseFontSize || 22) * 0.8}px`,
+                  }}
+                >
+                  {row.course || "(no course)"}
+                </div>
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-900/80 text-white text-[10px] px-2 py-0.5 rounded pointer-events-none whitespace-nowrap shadow-sm">
+                  ✥ Drag Course
+                </div>
               </div>
             )}
 
-            {/* Date (if enabled) */}
+            {/* Date (Draggable if enabled) */}
             {shouldShowDate && (
               <div
-                className="absolute text-xs z-10 text-center"
+                className="absolute flex items-center justify-center cursor-grab active:cursor-grabbing group z-20"
                 style={{
-                  left: `calc(50% + ${templateConfig.dateX ?? 0}px)`,
+                  left: `calc(50% + ${templateConfig.dateX ?? 125}px)`,
                   top: `calc(50% + ${templateConfig.dateY ?? 180}px)`,
                   transform: "translate(-50%, -50%)",
-                  color: templateConfig.dateColor || "#6b7280",
                 }}
+                onMouseDown={(e) => handleMouseDown(e, "date")}
               >
-                {(templateConfig.datePrefix || "Issued:")} {row.date || "—"}
+                <div
+                  className="text-xs select-none text-center"
+                  style={{
+                    color: templateConfig.dateColor || "#6b7280",
+                    fontSize: `${(templateConfig.dateFontSize || 16) * 0.8}px`,
+                  }}
+                >
+                  {(templateConfig.datePrefix ? `${templateConfig.datePrefix} ` : "")}{row.date || "—"}
+                </div>
+                <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-blue-900/80 text-white text-[10px] px-2 py-0.5 rounded pointer-events-none whitespace-nowrap shadow-sm">
+                  ✥ Drag Date
+                </div>
               </div>
             )}
 
@@ -635,19 +1161,25 @@ export default function Step4_Preview() {
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-8 py-6 z-10">
             {/* Custom Logo */}
             {templateConfig.customLogoData && (
-              <img 
-                src={templateConfig.customLogoData} 
-                alt="Custom Logo" 
-                className="max-h-16 mb-4 object-contain" 
-              />
+              <div
+                className="cursor-grab active:cursor-grabbing mb-4"
+                onMouseDown={(e) => handleMouseDown(e, "logo")}
+              >
+                <img 
+                  src={templateConfig.customLogoData} 
+                  alt="Custom Logo" 
+                  className="max-h-16 object-contain" 
+                />
+              </div>
             )}
 
             {/* Title & Subtitle */}
             {shouldShowTitle && (
               templateConfig.templateId === "prestige-geometric" && !templateConfig.customTitle ? (
                 <div 
-                  className="mb-2"
+                  className="mb-2 cursor-grab active:cursor-grabbing"
                   style={{ transform: `translate(${templateConfig.titleX || 0}px, ${templateConfig.titleY || 0}px)` }}
+                  onMouseDown={(e) => handleMouseDown(e, "title")}
                 >
                   <div 
                     className="font-serif font-black tracking-widest text-[#0f2847]"
@@ -668,18 +1200,23 @@ export default function Step4_Preview() {
                   </div>
                   {shouldShowSubtitle && (
                     <div 
-                      className="italic"
+                      className="italic cursor-grab active:cursor-grabbing"
                       style={{ 
                         fontSize: templateConfig.subtitleFontSize ? `${templateConfig.subtitleFontSize * 0.8}px` : "0.75rem",
                         color: templateConfig.subtitleColor || (templateConfig.isDarkModeTemplate ? "#e5e7eb" : "#64748b")
                       }}
+                      onMouseDown={(e) => handleMouseDown(e, "subtitle")}
                     >
                       {templateConfig.customSubtitle || "This certificate is proudly presented to"}
                     </div>
                   )}
                 </div>
               ) : (
-                <div style={{ transform: `translate(${templateConfig.titleX || 0}px, ${templateConfig.titleY || 0}px)` }}>
+                <div 
+                  className="cursor-grab active:cursor-grabbing"
+                  style={{ transform: `translate(${templateConfig.titleX || 0}px, ${templateConfig.titleY || 0}px)` }}
+                  onMouseDown={(e) => handleMouseDown(e, "title")}
+                >
                   <div 
                     className="font-bold mb-1"
                     style={{ 
@@ -693,11 +1230,12 @@ export default function Step4_Preview() {
                   
                   {shouldShowSubtitle && (
                     <div 
-                      className="italic mb-2" 
+                      className="italic mb-2 cursor-grab active:cursor-grabbing" 
                       style={{ 
                         fontSize: templateConfig.subtitleFontSize ? `${templateConfig.subtitleFontSize * 0.8}px` : "0.75rem",
                         color: templateConfig.subtitleColor || (templateConfig.isDarkModeTemplate ? "#e5e7eb" : "#6b7280") 
                       }}
+                      onMouseDown={(e) => handleMouseDown(e, "subtitle")}
                     >
                       {templateConfig.customSubtitle || "This certifies that"}
                     </div>
@@ -708,17 +1246,19 @@ export default function Step4_Preview() {
 
             {/* Recipient Name with optional Whiteout Eraser Box */}
             <div
-              className="relative flex items-center justify-center my-1"
+              className="relative flex items-center justify-center my-1 cursor-grab active:cursor-grabbing"
               style={{
                 transform: `translate(${templateConfig.nameX || 0}px, ${templateConfig.nameY || 0}px)`,
               }}
+              onMouseDown={(e) => handleMouseDown(e, "name")}
             >
               {templateConfig.coverOldText && (
                 <div
-                  className="absolute bg-white rounded pointer-events-none shadow-xs"
+                  className="absolute rounded pointer-events-none shadow-xs"
                   style={{
                     width: `${templateConfig.whiteoutWidth || 520}px`,
                     height: `${templateConfig.whiteoutHeight || 60}px`,
+                    backgroundColor: templateConfig.whiteoutColor || "#ffffff",
                     zIndex: 0,
                   }}
                 />
@@ -760,11 +1300,12 @@ export default function Step4_Preview() {
             {/* Course Name */}
             {shouldShowCourse && (
               <div
-                className="font-semibold text-sm leading-snug max-w-md my-0.5"
+                className="font-semibold text-sm leading-snug max-w-md my-0.5 cursor-grab active:cursor-grabbing"
                 style={{ 
                   color: templateConfig.templateId === "prestige-geometric" ? "#0f2847" : templateConfig.courseColor,
                   transform: `translate(${templateConfig.courseX || 0}px, ${templateConfig.courseY || 0}px)`
                 }}
+                onMouseDown={(e) => handleMouseDown(e, "course")}
               >
                 {row.course || "(no course)"}
               </div>
@@ -773,11 +1314,12 @@ export default function Step4_Preview() {
             {/* Date */}
             {shouldShowDate && (
               <div 
-                className="mt-1 text-xs" 
+                className="mt-1 text-xs cursor-grab active:cursor-grabbing" 
                 style={{ 
                   color: templateConfig.isDarkModeTemplate ? "#d1d5db" : "#9ca3af",
                   transform: `translate(${templateConfig.dateX || 0}px, ${templateConfig.dateY || 0}px)` 
                 }}
+                onMouseDown={(e) => handleMouseDown(e, "date")}
               >
                 {(templateConfig.datePrefix || "Issued:")} {row.date || "—"}
               </div>

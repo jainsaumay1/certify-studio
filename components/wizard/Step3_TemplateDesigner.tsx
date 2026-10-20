@@ -67,6 +67,8 @@ export interface TemplateConfig {
   titleY?: number;
   subtitleFontSize?: number;
   subtitleColor?: string;
+  subtitleX?: number;
+  subtitleY?: number;
   bodyPhraseFontSize?: number;
   bodyPhraseColor?: string;
 }
@@ -1095,34 +1097,80 @@ export default function Step3_TemplateDesigner() {
             </div>
 
             {templateConfig.coverOldText && (
-              <div className="grid grid-cols-2 gap-4 p-3 bg-white rounded-lg border border-gray-200">
-                <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">
-                    Whiteout Box Width (px)
-                  </label>
-                  <input
-                    type="number"
-                    value={templateConfig.whiteoutWidth || 380}
-                    onChange={(e) => update({ whiteoutWidth: Number(e.target.value) })}
-                    min={150}
-                    max={700}
-                    step={10}
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-                  />
+              <div className="space-y-3 p-3 bg-white rounded-lg border border-gray-200">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">
+                      Whiteout Box Width (px)
+                    </label>
+                    <input
+                      type="number"
+                      value={templateConfig.whiteoutWidth || 520}
+                      onChange={(e) => update({ whiteoutWidth: Number(e.target.value) })}
+                      min={150}
+                      max={700}
+                      step={10}
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-600 mb-1 block">
+                      Whiteout Box Height (px)
+                    </label>
+                    <input
+                      type="number"
+                      value={templateConfig.whiteoutHeight || 60}
+                      onChange={(e) => update({ whiteoutHeight: Number(e.target.value) })}
+                      min={20}
+                      max={120}
+                      step={2}
+                      className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-gray-600 mb-1 block">
-                    Whiteout Box Height (px)
+
+                {/* Box Underneath Color Picker */}
+                <div className="pt-2 border-t border-gray-100">
+                  <label className="text-xs font-medium text-gray-700 mb-1.5 block">
+                    Color of Box Underneath Name (Eraser Background)
                   </label>
-                  <input
-                    type="number"
-                    value={templateConfig.whiteoutHeight || 46}
-                    onChange={(e) => update({ whiteoutHeight: Number(e.target.value) })}
-                    min={20}
-                    max={120}
-                    step={2}
-                    className="w-full px-3 py-1.5 border border-gray-300 rounded-lg text-sm"
-                  />
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={templateConfig.whiteoutColor || "#ffffff"}
+                      onChange={(e) => update({ whiteoutColor: e.target.value })}
+                      className="w-10 h-9 border border-gray-300 rounded cursor-pointer"
+                    />
+                    <input
+                      type="text"
+                      value={templateConfig.whiteoutColor || "#ffffff"}
+                      onChange={(e) => update({ whiteoutColor: e.target.value })}
+                      placeholder="#ffffff"
+                      className="w-32 px-2.5 py-1.5 border border-gray-300 rounded-lg text-xs font-mono"
+                    />
+                    <div className="flex items-center gap-1.5 text-xs">
+                      {[
+                        { label: "White", val: "#ffffff" },
+                        { label: "Cream", val: "#fef9ee" },
+                        { label: "Off-White", val: "#fdfbf7" },
+                        { label: "Slate", val: "#f1f5f9" },
+                        { label: "Dark", val: "#0f172a" },
+                      ].map((swatch) => (
+                        <button
+                          key={swatch.val}
+                          type="button"
+                          onClick={() => update({ whiteoutColor: swatch.val })}
+                          className="px-2 py-1 rounded border text-[11px] hover:border-blue-400 flex items-center gap-1"
+                          style={{
+                            borderColor: (templateConfig.whiteoutColor || "#ffffff").toLowerCase() === swatch.val ? "#2563eb" : "#e5e7eb"
+                          }}
+                        >
+                          <span className="w-2.5 h-2.5 rounded-full border border-gray-300" style={{ backgroundColor: swatch.val }} />
+                          {swatch.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
