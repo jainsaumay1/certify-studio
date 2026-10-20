@@ -193,12 +193,33 @@ export async function renderCertificate(
       } else {
         logoImage = await pdfDoc.embedJpg(bytes);
       }
-      const logoDims = logoImage.scale(0.5); // scale down arbitrarily for now, user can adjust in future
-      const targetHeight = 60;
-      const targetWidth = (logoDims.width / logoDims.height) * targetHeight;
+      const logoDims = logoImage.scale(1.0);
+      const isCustom = Boolean(templateConfig.customBackgroundData || templateConfig.templateId === "custom");
+      
+      const targetHeight = templateConfig.logoHeight || 75;
+      const targetWidth = templateConfig.logoWidth || (logoDims.width / logoDims.height) * targetHeight;
+      
+      const logoCenterX = (width / 2) + (templateConfig.logoX || (isCustom ? 125 : 0));
+      const logoCenterY = isCustom
+        ? (height / 2) - (templateConfig.logoY || -75)
+        : height - 80 - (templateConfig.logoY || 0);
+
+      // Eraser box for previous/background logo if present
+      if (templateConfig.coverOldLogo ?? isCustom) {
+        const coverW = templateConfig.oldLogoCoverWidth || (targetWidth + 20);
+        const coverH = templateConfig.oldLogoCoverHeight || (targetHeight + 20);
+        page.drawRectangle({
+          x: logoCenterX - coverW / 2,
+          y: logoCenterY - coverH / 2,
+          width: coverW,
+          height: coverH,
+          color: rgb(1, 1, 1),
+        });
+      }
+
       page.drawImage(logoImage, {
-        x: (width - targetWidth) / 2,
-        y: height - 80,
+        x: logoCenterX - targetWidth / 2,
+        y: logoCenterY - targetHeight / 2,
         width: targetWidth,
         height: targetHeight,
       });
@@ -345,18 +366,29 @@ export async function renderCertificate(
   const nameColor = hexToRgb(templateConfig.nameColor);
   const nameWidth = boldFont.widthOfTextAtSize(displayName, nameFontSize);
   
-  const baseNameY = height - 148 - nameFontSize - 20;
-  const finalNameY = baseNameY - (templateConfig.nameY || 0); // subtract to push down
-  const nameCenterX = (width / 2) + (templateConfig.nameX || 0);
+  const isCustomBg = Boolean(templateConfig.customBackgroundData || templateConfig.templateId === "custom");
+  const nameCenterX = (width / 2) + (templateConfig.nameX ?? (isCustomBg ? 125 : 0));
+  
+  let finalNameY: number;
+  let woCenterY: number;
+  if (isCustomBg) {
+    // For custom backgrounds, use center-anchored coordinates matching visual editor
+    finalNameY = (height / 2) - (templateConfig.nameY ?? 52) - (nameFontSize * 0.35);
+    woCenterY = (height / 2) - (templateConfig.nameY ?? 52);
+  } else {
+    const baseNameY = height - 148 - nameFontSize - 20;
+    finalNameY = baseNameY - (templateConfig.nameY || 0);
+    woCenterY = finalNameY + (nameFontSize / 2);
+  }
   const finalNameX = Math.max(margin, nameCenterX - (nameWidth / 2));
   
   // Whiteout background to cleanly erase pre-printed placeholder text (like "Name Surname")
-  if (templateConfig.coverOldText) {
-    const woWidth = templateConfig.whiteoutWidth || Math.max(380, nameWidth + 60);
+  if (templateConfig.coverOldText ?? isCustomBg) {
+    const woWidth = templateConfig.whiteoutWidth || Math.max(520, nameWidth + 60);
     const woHeight = templateConfig.whiteoutHeight || (nameFontSize + 24);
     page.drawRectangle({
       x: Math.max(0, nameCenterX - (woWidth / 2)),
-      y: finalNameY - (woHeight - nameFontSize) / 2,
+      y: woCenterY - (woHeight / 2),
       width: woWidth,
       height: woHeight,
       color: rgb(1, 1, 1),
@@ -373,15 +405,15 @@ export async function renderCertificate(
 
   const shouldShowBody =
     !templateConfig.isCleanMode &&
-    (templateConfig.showBodyPhrase ??
-      (templateConfig.templateId !== "custom" && !templateConfig.customBackgroundData));
+    (templateConfig.showBodyPhrase ?? !isCustomBg);
 
   if (shouldShowBody) {
     const isPrestige = templateConfig.templateId === "prestige-geometric";
+    const baseUnderlineY = isCustomBg ? (woCenterY - 20) : (finalNameY - 8);
     // Name underline
     page.drawLine({
-      start: { x: nameCenterX - width * 0.35, y: baseNameY - 8 },
-      end: { x: nameCenterX + width * 0.35, y: baseNameY - 8 },
+      start: { x: nameCenterX - width * 0.35, y: baseUnderlineY },
+      end: { x: nameCenterX + width * 0.35, y: baseUnderlineY },
       thickness: isPrestige ? 1 : 0.75,
       color: isPrestige ? rgb(0.96, 0.65, 0.12) : rgb(accentColor.r, accentColor.g, accentColor.b),
     });
@@ -399,7 +431,7 @@ export async function renderCertificate(
 
     page.drawText(completedText, {
       x: nameCenterX - (completedWidth / 2),
-      y: baseNameY - 34,
+      y: baseUnderlineY - 26,
       font: regularFont,
       size: completedSize,
       color: bodyCustomCol ? rgb(bodyCustomCol.r, bodyCustomCol.g, bodyCustomCol.b) : bodyDefaultCol,
@@ -407,16 +439,17 @@ export async function renderCertificate(
   }
 
   // Course Name
-  const shouldShowCourse = templateConfig.showCourse ?? true;
-  const baseCourseY = baseNameY - 36 - templateConfig.courseFontSize - 16;
-  const finalCourseY = baseCourseY - (templateConfig.courseY || 0);
+  const shouldShowCourse = templateConfig.showCourse ?? !isCustomBg;
 
   if (shouldShowCourse) {
     const courseSize = templateConfig.courseFontSize;
     const courseColor = hexToRgb(templateConfig.courseColor);
     const courseWidth = boldFont.widthOfTextAtSize(courseName, courseSize);
-    const courseCenterX = (width / 2) + (templateConfig.courseX || 0);
+    const courseCenterX = (width / 2) + (templateConfig.courseX ?? (isCustomBg ? (templateConfig.nameX ?? 125) : 0));
     const finalCourseX = Math.max(margin, courseCenterX - (courseWidth / 2));
+    const finalCourseY = isCustomBg
+      ? (height / 2) - (templateConfig.courseY ?? ((templateConfig.nameY ?? 52) + 45))
+      : (finalNameY - 36 - courseSize - (templateConfig.courseY || 0));
 
     page.drawText(courseName, {
       x: finalCourseX,
@@ -428,9 +461,7 @@ export async function renderCertificate(
   }
 
   // Issue Date
-  const shouldShowDate = templateConfig.showDate ?? true;
-  const baseDateY = baseCourseY - 50;
-  const finalDateY = baseDateY - (templateConfig.dateY || 0);
+  const shouldShowDate = templateConfig.showDate ?? !isCustomBg;
 
   if (shouldShowDate) {
     const dateSize = templateConfig.dateFontSize;
@@ -438,8 +469,11 @@ export async function renderCertificate(
     const datePrefix = templateConfig.datePrefix || "Issued:";
     const dateText = `${datePrefix} ${issueDate}`;
     const dateWidth = regularFont.widthOfTextAtSize(dateText, dateSize);
-    const dateCenterX = (width / 2) + (templateConfig.dateX || 0);
+    const dateCenterX = (width / 2) + (templateConfig.dateX ?? 0);
     const finalDateX = Math.max(margin, dateCenterX - (dateWidth / 2));
+    const finalDateY = isCustomBg
+      ? (height / 2) - (templateConfig.dateY ?? 180)
+      : (finalNameY - 80 - (templateConfig.dateY || 0));
     const staticColor = templateConfig.isDarkModeTemplate ? rgb(0.9, 0.9, 0.9) : rgb(0.4, 0.4, 0.4);
 
     page.drawText(dateText, {

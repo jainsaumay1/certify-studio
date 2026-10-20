@@ -26,6 +26,13 @@ export interface TemplateConfig {
   qrY: number;
   qrSize: number;
   logoUrl: string;
+  logoX?: number;
+  logoY?: number;
+  logoWidth?: number;
+  logoHeight?: number;
+  coverOldLogo?: boolean;
+  oldLogoCoverWidth?: number;
+  oldLogoCoverHeight?: number;
   customBackgroundData?: string; // base64 URI
   customLogoData?: string; // base64 URI
   customFontData?: string; // base64 URI
@@ -35,6 +42,7 @@ export interface TemplateConfig {
   coverOldText?: boolean; // Draws white boxes behind dynamic text
   whiteoutWidth?: number; // Width of whiteout box
   whiteoutHeight?: number; // Height of whiteout box
+  whiteoutColor?: string;
 
   // Element Visibility Toggles
   showTitle?: boolean;
@@ -823,6 +831,21 @@ export default function Step3_TemplateDesigner() {
                       showSubtitle: false,
                       showBodyPhrase: false,
                       showSignatures: false,
+                      showCourse: false,
+                      showDate: false,
+                      coverOldText: true,
+                      whiteoutWidth: 520,
+                      whiteoutHeight: 60,
+                      nameColor: "#133e7c",
+                      nameFontFamily: "Helvetica-Bold",
+                      nameFontSize: 36,
+                      nameX: 125,
+                      nameY: 52,
+                      logoX: 125,
+                      logoY: -75,
+                      coverOldLogo: true,
+                      oldLogoCoverWidth: 95,
+                      oldLogoCoverHeight: 95,
                     });
                   };
                   reader.readAsDataURL(file);
@@ -831,50 +854,182 @@ export default function Step3_TemplateDesigner() {
               className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
             />
             {templateConfig.customBackgroundData && (
-              <div className="mt-3 flex items-center gap-3">
-                <img src={templateConfig.customBackgroundData} alt="Custom Background" className="h-16 w-auto border rounded shadow-xs" />
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => update({
-                    customBackgroundData: undefined,
-                    showTitle: true,
-                    showSubtitle: true,
-                    showBodyPhrase: true,
-                    isCleanMode: false,
-                  })}
-                >
-                  Remove
-                </Button>
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <img src={templateConfig.customBackgroundData} alt="Custom Background" className="h-16 w-auto border rounded shadow-xs" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => update({
+                      customBackgroundData: undefined,
+                      showTitle: true,
+                      showSubtitle: true,
+                      showBodyPhrase: true,
+                      isCleanMode: false,
+                    })}
+                  >
+                    Remove
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100 text-xs gap-1"
+                    onClick={() => update({
+                      nameX: 125,
+                      nameY: 52,
+                      whiteoutWidth: 520,
+                      whiteoutHeight: 60,
+                      coverOldText: true,
+                      logoX: 125,
+                      logoY: -75,
+                      coverOldLogo: true,
+                      oldLogoCoverWidth: 95,
+                      oldLogoCoverHeight: 95,
+                      nameColor: "#133e7c",
+                      nameFontFamily: "Helvetica-Bold",
+                      nameFontSize: 36,
+                      showTitle: false,
+                      showSubtitle: false,
+                      showBodyPhrase: false,
+                      showCourse: false,
+                      showDate: false,
+                      showSignatures: false,
+                      isCleanMode: true,
+                    })}
+                  >
+                    🪄 Auto-Fit Canva Template (Left Banner Layout)
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="text-xs gap-1"
+                    onClick={() => update({
+                      nameX: 0,
+                      nameY: 0,
+                      whiteoutWidth: 460,
+                      whiteoutHeight: 56,
+                      coverOldText: true,
+                      logoX: 0,
+                      logoY: -110,
+                      coverOldLogo: true,
+                      oldLogoCoverWidth: 95,
+                      oldLogoCoverHeight: 95,
+                      nameColor: "#133e7c",
+                      nameFontFamily: "Helvetica-Bold",
+                      showTitle: false,
+                      showSubtitle: false,
+                      showBodyPhrase: false,
+                      showCourse: false,
+                      showDate: false,
+                      isCleanMode: true,
+                    })}
+                  >
+                    🎯 Center Alignment
+                  </Button>
+                </div>
               </div>
             )}
           </div>
 
           <hr className="border-gray-200" />
 
-          {/* Logo Upload */}
-          <div>
-            <label className="text-sm font-semibold text-gray-800 block mb-1">Custom Logo (PNG/JPG)</label>
-            <p className="text-xs text-gray-500 mb-3">Will be placed at the top center of the certificate.</p>
-            <input
-              type="file"
-              accept=".png,.jpg,.jpeg"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (file) {
-                  const reader = new FileReader();
-                  reader.onload = (ev) => {
-                    update({ customLogoData: ev.target?.result as string });
-                  };
-                  reader.readAsDataURL(file);
-                }
-              }}
-              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
+          {/* Logo Upload & Positioning */}
+          <div className="space-y-3">
+            <div>
+              <label className="text-sm font-semibold text-gray-800 block mb-1">Custom Logo (PNG/JPG)</label>
+              <p className="text-xs text-gray-500 mb-3">Upload your organization or university logo to place on the certificate.</p>
+              <input
+                type="file"
+                accept=".png,.jpg,.jpeg"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (ev) => {
+                      update({ 
+                        customLogoData: ev.target?.result as string,
+                        coverOldLogo: true,
+                      });
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }}
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
+
             {templateConfig.customLogoData && (
-              <div className="mt-3 flex items-center gap-3">
-                <img src={templateConfig.customLogoData} alt="Custom Logo" className="h-12 w-auto border rounded bg-white p-1" />
-                <Button variant="ghost" size="sm" onClick={() => update({ customLogoData: undefined })}>Remove</Button>
+              <div className="p-3 bg-white border border-gray-200 rounded-lg space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <img src={templateConfig.customLogoData} alt="Custom Logo" className="h-12 w-auto border rounded bg-white p-1" />
+                    <span className="text-xs text-gray-600">Logo loaded</span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => update({ customLogoData: undefined })}>Remove</Button>
+                </div>
+
+                {/* Cover Old Logo Toggle */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <div>
+                    <span className="text-xs font-semibold text-gray-800 block">Erase / Whiteout Previous Logo</span>
+                    <span className="text-[11px] text-gray-500">Paints a clean white box behind your logo to hide the template's previous logo</span>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input 
+                      type="checkbox" 
+                      className="sr-only peer" 
+                      checked={templateConfig.coverOldLogo ?? true}
+                      onChange={(e) => update({ coverOldLogo: e.target.checked })}
+                    />
+                    <div className="w-8 h-4 bg-gray-300 rounded-full peer peer-checked:bg-blue-600 peer-focus:ring-2 peer-focus:ring-blue-300 transition-colors after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:after:translate-x-4"></div>
+                  </label>
+                </div>
+
+                {/* Logo Position & Size */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1 text-xs">
+                  <div>
+                    <label className="text-[11px] text-gray-600 block mb-0.5">Logo Shift X (px)</label>
+                    <input
+                      type="number"
+                      value={templateConfig.logoX || 0}
+                      onChange={(e) => update({ logoX: Number(e.target.value) })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-gray-600 block mb-0.5">Logo Shift Y (px)</label>
+                    <input
+                      type="number"
+                      value={templateConfig.logoY || 0}
+                      onChange={(e) => update({ logoY: Number(e.target.value) })}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-gray-600 block mb-0.5">Logo Width (px)</label>
+                    <input
+                      type="number"
+                      value={templateConfig.logoWidth || 80}
+                      onChange={(e) => update({ logoWidth: Number(e.target.value) })}
+                      min={30} max={200}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[11px] text-gray-600 block mb-0.5">Logo Height (px)</label>
+                    <input
+                      type="number"
+                      value={templateConfig.logoHeight || 80}
+                      onChange={(e) => update({ logoHeight: Number(e.target.value) })}
+                      min={30} max={200}
+                      className="w-full px-2 py-1 border border-gray-300 rounded text-xs"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
